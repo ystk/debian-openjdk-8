@@ -1,0 +1,5 @@
+#!/bin/sh
+
+testsuite_dir=$1
+
+fgrep -r --include='*.java' --include='*.sh' --files-with-match @test ${testsuite_dir} | xargs fgrep -L '@ignore' | sort -d -i

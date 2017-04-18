@@ -1,0 +1,37 @@
+
+# HG changeset patch
+# User gromero
+# Date 1481806659 18000
+# Node ID fddd627ea372a42b1adcd74790775ecbf0fcb88f
+# Parent  d15b51f1149bd1b7e87f4ec6a1bc5678c15275ef
+8170153: PPC64/s390x/aarch64: Poor StrictMath performance due to non-optimized compilation
+Reviewed-by: mdoerr, erikj, simonis, aph
+
+diff -r d15b51f1149b -r fddd627ea372 make/common/NativeCompilation.gmk
+--- openjdk/make/common/NativeCompilation.gmk	Tue Oct 25 08:38:21 2016 -0700
++++ openjdk/make/common/NativeCompilation.gmk	Thu Dec 15 07:57:39 2016 -0500
+@@ -297,17 +297,21 @@
+     $$(shell $(RM) -f $$($1_SUPERFLUOUS_OBJS))
+   endif
+ 
+-  # Pickup extra OPENJDK_TARGET_OS_API and/or OPENJDK_TARGET_OS dependent variables for CFLAGS.
+-  $1_EXTRA_CFLAGS:=$$($1_CFLAGS_$(OPENJDK_TARGET_OS_API)) $$($1_CFLAGS_$(OPENJDK_TARGET_OS))
++  # Pickup extra OPENJDK_TARGET_OS_API, OPENJDK_TARGET_OS, and/or OPENJDK_TARGET_OS plus
++  # OPENJDK_TARGET_CPU pair dependent variables for CFLAGS.
++  $1_EXTRA_CFLAGS:=$$($1_CFLAGS_$(OPENJDK_TARGET_OS_API)) $$($1_CFLAGS_$(OPENJDK_TARGET_OS)) \
++      $$($1_CFLAGS_$(OPENJDK_TARGET_OS)_$(OPENJDK_TARGET_CPU))
+   ifneq ($(DEBUG_LEVEL),release)
+     # Pickup extra debug dependent variables for CFLAGS
+     $1_EXTRA_CFLAGS+=$$($1_CFLAGS_debug)
+     $1_EXTRA_CFLAGS+=$$($1_CFLAGS_$(OPENJDK_TARGET_OS_API)_debug)
+     $1_EXTRA_CFLAGS+=$$($1_CFLAGS_$(OPENJDK_TARGET_OS)_debug)
++    $1_EXTRA_CFLAGS+=$$($1_CFLAGS_$(OPENJDK_TARGET_OS)_$(OPENJDK_TARGET_CPU)_debug)
+   else
+     $1_EXTRA_CFLAGS+=$$($1_CFLAGS_release)
+     $1_EXTRA_CFLAGS+=$$($1_CFLAGS_$(OPENJDK_TARGET_OS_API)_release)
+     $1_EXTRA_CFLAGS+=$$($1_CFLAGS_$(OPENJDK_TARGET_OS)_release)
++    $1_EXTRA_CFLAGS+=$$($1_CFLAGS_$(OPENJDK_TARGET_OS)_$(OPENJDK_TARGET_CPU)_release)
+   endif
+ 
+   # Pickup extra OPENJDK_TARGET_OS_API and/or OPENJDK_TARGET_OS dependent variables for CXXFLAGS.
+

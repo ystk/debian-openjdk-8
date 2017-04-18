@@ -1,0 +1,44 @@
+
+# HG changeset patch
+# User gromero
+# Date 1481806695 18000
+# Node ID 80927e772b9ac63361e05cd4edb9ce6e71ec9c45
+# Parent  71215ac21d105d3b73f4c7ebae62252f9af8bc6d
+8170153: PPC64/s390x/aarch64: Poor StrictMath performance due to non-optimized compilation
+Reviewed-by: mdoerr, erikj, simonis, aph
+
+diff -r 71215ac21d10 -r 80927e772b9a make/lib/CoreLibraries.gmk
+--- openjdk/jdk/make/lib/CoreLibraries.gmk	Thu Dec 15 09:03:36 2016 +0100
++++ openjdk/jdk/make/lib/CoreLibraries.gmk	Thu Dec 15 07:58:15 2016 -0500
+@@ -27,10 +27,18 @@
+ 
+ ##########################################################################################
+ 
+-BUILD_LIBFDLIBM_OPTIMIZATION := HIGH
++BUILD_LIBFDLIBM_OPTIMIZATION := NONE
+ 
+-ifneq ($(OPENJDK_TARGET_OS), solaris)
+-  BUILD_LIBFDLIBM_OPTIMIZATION := NONE
++ifeq ($(OPENJDK_TARGET_OS), solaris)
++  BUILD_LIBFDLIBM_OPTIMIZATION := HIGH
++endif
++
++ifeq ($(OPENJDK_TARGET_OS), linux)
++  ifeq ($(OPENJDK_TARGET_CPU), ppc64)
++    BUILD_LIBFDLIBM_OPTIMIZATION := HIGH
++  else ifeq ($(OPENJDK_TARGET_CPU), ppc64le)
++    BUILD_LIBFDLIBM_OPTIMIZATION := HIGH
++  endif
+ endif
+ 
+ ifneq ($(OPENJDK_TARGET_OS), macosx)
+@@ -44,6 +52,8 @@
+           -I$(JDK_TOPDIR)/src/share/native/java/lang/fdlibm/include, \
+       CFLAGS_windows_debug := -DLOGGING, \
+       CFLAGS_aix := -qfloat=nomaf, \
++      CFLAGS_linux_ppc64 := -ffp-contract=off, \
++      CFLAGS_linux_ppc64le := -ffp-contract=off, \
+       ARFLAGS := $(ARFLAGS), \
+       OBJECT_DIR := $(JDK_OUTPUTDIR)/objs/libfdlibm, \
+       DEBUG_SYMBOLS := $(DEBUG_ALL_BINARIES)))
+

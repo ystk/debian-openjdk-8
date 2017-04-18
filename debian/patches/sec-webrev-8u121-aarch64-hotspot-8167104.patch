@@ -1,0 +1,243 @@
+# HG changeset patch
+# User kevinw
+# Date 1478123693 25200
+#      Wed Nov 02 14:54:53 2016 -0700
+# Node ID 02a3d0dcbeddd8507d9a4b1f5a9f83aca75e5acb
+# Parent  c7b69bdda4d76451da020996829d45d7880ed143
+8167104: Additional class construction refinements
+Reviewed-by: hseigel
+
+--- a/hotspot/src/share/vm/classfile/stackMapFrame.cpp
++++ b/hotspot/src/share/vm/classfile/stackMapFrame.cpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2003, 2014, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 2003, 2016, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -155,47 +155,8 @@ int StackMapFrame::is_assignable_to(
+   return i;
+ }
+ 
+-bool StackMapFrame::has_flag_match_exception(
+-    const StackMapFrame* target) const {
+-  // We allow flags of {UninitThis} to assign to {} if-and-only-if the
+-  // target frame does not depend upon the current type.
+-  // This is slightly too strict, as we need only enforce that the
+-  // slots that were initialized by the <init> (the things that were
+-  // UninitializedThis before initialize_object() converted them) are unused.
+-  // However we didn't save that information so we'll enforce this upon
+-  // anything that might have been initialized.  This is a rare situation
+-  // and javac never generates code that would end up here, but some profilers
+-  // (such as NetBeans) might, when adding exception handlers in <init>
+-  // methods to cover the invokespecial instruction.  See 7020118.
+-
+-  assert(max_locals() == target->max_locals() &&
+-         stack_size() == target->stack_size(), "StackMap sizes must match");
+-
+-  VerificationType top = VerificationType::top_type();
+-  VerificationType this_type = verifier()->current_type();
+-
+-  if (!flag_this_uninit() || target->flags() != 0) {
+-    return false;
+-  }
+-
+-  for (int i = 0; i < target->locals_size(); ++i) {
+-    if (locals()[i] == this_type && target->locals()[i] != top) {
+-      return false;
+-    }
+-  }
+-
+-  for (int i = 0; i < target->stack_size(); ++i) {
+-    if (stack()[i] == this_type && target->stack()[i] != top) {
+-      return false;
+-    }
+-  }
+-
+-  return true;
+-}
+-
+ bool StackMapFrame::is_assignable_to(
+-    const StackMapFrame* target, bool is_exception_handler,
+-    ErrorContext* ctx, TRAPS) const {
++    const StackMapFrame* target, ErrorContext* ctx, TRAPS) const {
+   if (_max_locals != target->max_locals()) {
+     *ctx = ErrorContext::locals_size_mismatch(
+         _offset, (StackMapFrame*)this, (StackMapFrame*)target);
+@@ -226,8 +187,7 @@ bool StackMapFrame::is_assignable_to(
+     return false;
+   }
+ 
+-  bool match_flags = (_flags | target->flags()) == target->flags();
+-  if (match_flags || is_exception_handler && has_flag_match_exception(target)) {
++  if ((_flags | target->flags()) == target->flags()) {
+     return true;
+   } else {
+     *ctx = ErrorContext::bad_flags(target->offset(),
+--- a/hotspot/src/share/vm/classfile/stackMapFrame.hpp
++++ b/hotspot/src/share/vm/classfile/stackMapFrame.hpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2003, 2014, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 2003, 2016, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -167,8 +167,7 @@ class StackMapFrame : public ResourceObj
+ 
+   // Return true if this stack map frame is assignable to target.
+   bool is_assignable_to(
+-      const StackMapFrame* target, bool is_exception_handler,
+-      ErrorContext* ctx, TRAPS) const;
++      const StackMapFrame* target, ErrorContext* ctx, TRAPS) const;
+ 
+   inline void set_mark() {
+ #ifdef ASSERT
+@@ -290,8 +289,6 @@ class StackMapFrame : public ResourceObj
+   int is_assignable_to(
+     VerificationType* src, VerificationType* target, int32_t len, TRAPS) const;
+ 
+-  bool has_flag_match_exception(const StackMapFrame* target) const;
+-
+   TypeOrigin stack_top_ctx();
+ 
+   void print_on(outputStream* str) const;
+--- a/hotspot/src/share/vm/classfile/stackMapTable.cpp
++++ b/hotspot/src/share/vm/classfile/stackMapTable.cpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2003, 2014, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 2003, 2016, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -70,26 +70,25 @@ int StackMapTable::get_index_from_offset
+ 
+ bool StackMapTable::match_stackmap(
+     StackMapFrame* frame, int32_t target,
+-    bool match, bool update, bool handler, ErrorContext* ctx, TRAPS) const {
++    bool match, bool update, ErrorContext* ctx, TRAPS) const {
+   int index = get_index_from_offset(target);
+-  return match_stackmap(frame, target, index, match, update, handler, ctx, THREAD);
++  return match_stackmap(frame, target, index, match, update, ctx, THREAD);
+ }
+ 
+ // Match and/or update current_frame to the frame in stackmap table with
+ // specified offset and frame index. Return true if the two frames match.
+-// handler is true if the frame in stackmap_table is for an exception handler.
+ //
+-// The values of match and update are:                  _match__update__handler
++// The values of match and update are:                  _match__update
+ //
+-// checking a branch target:                             true   false   false
+-// checking an exception handler:                        true   false   true
++// checking a branch target:                             true   false
++// checking an exception handler:                        true   false
+ // linear bytecode verification following an
+-// unconditional branch:                                 false  true    false
++// unconditional branch:                                 false  true
+ // linear bytecode verification not following an
+-// unconditional branch:                                 true   true    false
++// unconditional branch:                                 true   true
+ bool StackMapTable::match_stackmap(
+     StackMapFrame* frame, int32_t target, int32_t frame_index,
+-    bool match, bool update, bool handler, ErrorContext* ctx, TRAPS) const {
++    bool match, bool update, ErrorContext* ctx, TRAPS) const {
+   if (frame_index < 0 || frame_index >= _frame_count) {
+     *ctx = ErrorContext::missing_stackmap(frame->offset());
+     frame->verifier()->verify_error(
+@@ -102,7 +101,7 @@ bool StackMapTable::match_stackmap(
+   if (match) {
+     // Has direct control flow from last instruction, need to match the two
+     // frames.
+-    result = frame->is_assignable_to(stackmap_frame, handler,
++    result = frame->is_assignable_to(stackmap_frame,
+         ctx, CHECK_VERIFY_(frame->verifier(), result));
+   }
+   if (update) {
+@@ -126,7 +125,7 @@ void StackMapTable::check_jump_target(
+     StackMapFrame* frame, int32_t target, TRAPS) const {
+   ErrorContext ctx;
+   bool match = match_stackmap(
+-    frame, target, true, false, false, &ctx, CHECK_VERIFY(frame->verifier()));
++    frame, target, true, false, &ctx, CHECK_VERIFY(frame->verifier()));
+   if (!match || (target < 0 || target >= _code_length)) {
+     frame->verifier()->verify_error(ctx,
+         "Inconsistent stackmap frames at branch target %d", target);
+--- a/hotspot/src/share/vm/classfile/stackMapTable.hpp
++++ b/hotspot/src/share/vm/classfile/stackMapTable.hpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 2003, 2016, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -77,12 +77,12 @@ class StackMapTable : public StackObj {
+   // specified offset. Return true if the two frames match.
+   bool match_stackmap(
+     StackMapFrame* current_frame, int32_t offset,
+-    bool match, bool update, bool handler, ErrorContext* ctx, TRAPS) const;
++    bool match, bool update, ErrorContext* ctx, TRAPS) const;
+   // Match and/or update current_frame to the frame in stackmap table with
+   // specified offset and frame index. Return true if the two frames match.
+   bool match_stackmap(
+     StackMapFrame* current_frame, int32_t offset, int32_t frame_index,
+-    bool match, bool update, bool handler, ErrorContext* ctx, TRAPS) const;
++    bool match, bool update, ErrorContext* ctx, TRAPS) const;
+ 
+   // Check jump instructions. Make sure there are no uninitialized
+   // instances on backward branch.
+--- a/hotspot/src/share/vm/classfile/verifier.cpp
++++ b/hotspot/src/share/vm/classfile/verifier.cpp
+@@ -1817,7 +1817,7 @@ u2 ClassVerifier::verify_stackmap_table(
+       // If matched, current_frame will be updated by this method.
+       bool matches = stackmap_table->match_stackmap(
+         current_frame, this_offset, stackmap_index,
+-        !no_control_flow, true, false, &ctx, CHECK_VERIFY_(this, 0));
++        !no_control_flow, true, &ctx, CHECK_VERIFY_(this, 0));
+       if (!matches) {
+         // report type error
+         verify_error(ctx, "Instruction type does not match stack map");
+@@ -1864,7 +1864,7 @@ void ClassVerifier::verify_exception_han
+       }
+       ErrorContext ctx;
+       bool matches = stackmap_table->match_stackmap(
+-        new_frame, handler_pc, true, false, true, &ctx, CHECK_VERIFY(this));
++        new_frame, handler_pc, true, false, &ctx, CHECK_VERIFY(this));
+       if (!matches) {
+         verify_error(ctx, "Stack map does not match the one at "
+             "exception handler %d", handler_pc);
+--- a/hotspot/test/runtime/handlerInTry/LoadHandlerInTry.java
++++ b/hotspot/test/runtime/handlerInTry/LoadHandlerInTry.java
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -24,7 +24,7 @@
+ /*
+  * @test
+  * @bug 8075118
+- * @summary Allow a ctor to call super() from a switch bytecode.
++ * @summary JVM stuck in infinite loop during verification
+  * @compile HandlerInTry.jasm
+  * @compile IsolatedHandlerInTry.jasm
+  * @run main/othervm -Xverify:all LoadHandlerInTry
+@@ -70,9 +70,10 @@ public class LoadHandlerInTry {
+         System.out.println("Regression test for bug 8075118");
+         try {
+             Class newClass = Class.forName("HandlerInTry");
+-        } catch (Exception e) {
+-            System.out.println("Failed: Exception was thrown: " + e.toString());
+-            throw e;
++            throw new RuntimeException(
++                 "Failed to throw VerifyError for HandlerInTry");
++        } catch (java.lang.VerifyError e) {
++            System.out.println("Passed: VerifyError exception was thrown");
+         }
+ 
+         try {

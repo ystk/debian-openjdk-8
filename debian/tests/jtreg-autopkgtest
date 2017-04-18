@@ -1,0 +1,87 @@
+#!/bin/bash
+
+set -o errexit
+set -o errtrace
+set -o pipefail
+set -o nounset
+
+testsuite=$1
+shift 1
+
+tmp_dir="${AUTOPKGTEST_TMP:-/tmp/autopkgtest/tmp}"
+result_dir="${AUTOPKGTEST_ARTIFACTS:-/tmp/autopkgtest/artifact}"
+
+testsuite_dir="${tmp_dir}/${testsuite}"
+
+work_dir="${result_dir}/${testsuite}/JTwork"
+report_dir="${result_dir}/${testsuite}/JTreport"
+
+pids=""
+
+mkdir -p "${tmp_dir}" "${work_dir}" "${report_dir}"
+
+source <(dpkg-architecture -s)
+
+tarball=${testsuite}.tar.xz
+case ${testsuite} in
+  hotspot)
+    if [ ${DEB_BUILD_ARCH} == "arm64" ]; then
+      tarball=hotspot-aarch64.tar.xz
+    elif [ ${DEB_BUILD_ARCH} == "armhf" ]; then
+      tarball=hotspot-aarch32.tar.xz
+    fi
+    ;;
+  jdk)
+    xvfb-run --auto-servernum --server-num=10 \
+      --error-file=${AUTOPKGTEST_ARTIFACTS}/xvfb-run.log \
+      -f ${AUTOPKGTEST_TMP}/Xauthority-xvfb \
+      --server-args="-extension GLX -screen 0 1600x900x24" \
+      xfwm4 &
+    pids+=" $!"
+    ;;
+  langtools) ;;
+  *) exit 1;;
+esac
+
+# unpack testsuite tarball
+d="$(head -1 <(tar tf ${tarball}) | sed 's,/.*,,')"
+tar -C "${tmp_dir}" -x -f ${tarball} "${d}/test/"
+mv "${tmp_dir}/${d}" "${testsuite_dir}"
+
+# from debian/rules
+# these are best guesses depending on the architecture and the build machines
+# some tests require 4min to run, so set the minimum timeout to 3 x 2min.
+jt_timeout="3"
+if [[ "alpha armel armhf ia64 m68k mips mipsel mips64 mips64el powerpc powerpcspe x32" == *"${DEB_HOST_ARCH}"* ]]; then
+  jt_timeout="5"
+fi
+
+# grab additional options from command line args
+jt_options="$@"
+if [[ "armel" == *"${DEB_HOST_ARCH}"* ]]; then
+  jt_options+=" -Xmx256M"
+fi
+
+# jtreg will use default-java if JT_JAVA is not set
+export JT_JAVA=/usr/lib/jvm/java-8-openjdk-${DEB_HOST_ARCH}
+
+jtreg ${jt_options} \
+  -verbose:1 \
+  -automatic \
+  -ignore:quiet \
+  -agentvm \
+  -conc:auto \
+  -timeout:${jt_timeout} \
+  -jdk:${JT_JAVA} \
+  -exclude:debian/excludelist.${testsuite}.jtx \
+  -w:${work_dir} \
+  -r:${report_dir} \
+  ${testsuite_dir}/test \
+  | tee ${result_dir}/check-${testsuite}-stdout.log \ 
+    2> ${result_dir}/check-${testsuite}-stderr.log
+
+if [ -n "${pids}" ]; then
+  kill ${pids} 2>&1 || true
+  sleep 5
+  kill -9 ${pids} || true
+fi
