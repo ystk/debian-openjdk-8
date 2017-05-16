@@ -1,8 +1,74 @@
-openjdk-8 (8u121-b13-1~bpo8+1) jessie-backports; urgency=medium
+openjdk-8 (8u131-b11-1~bpo8+1) jessie-backports; urgency=medium
 
   * Rebuild for jessie-backports.
 
- -- Moritz Muehlenhoff <moritz@wikimedia.org>  Tue, 24 Jan 2017 09:17:57 +0000
+ -- Moritz Muehlenhoff <moritz@wikimedia.org>  Wed, 03 May 2017 10:43:42 +0000
+
+openjdk-8 (8u131-b11-1) unstable; urgency=high
+
+  * Update to 8u131-b11, Hotspot 8u112-b12 for AArch64.
+  * Security fixes:
+    - S8167110, CVE-2017-3514: Windows peering issue.
+    - S8165626, CVE-2017-3512: Improved window framing.
+    - S8163528, CVE-2017-3511: Better library loading.
+    - S8169011, CVE-2017-3526: Resizing XML parse trees.
+    - S8163520, CVE-2017-3509: Reuse cache entries.
+    - S8171533, CVE-2017-3544: Better email transfer.
+    - S8170222, CVE-2017-3533: Better transfers of files.
+    - S8171121, CVE-2017-3539: Enhancing jar checking.
+
+  [ Tiago Stürmer Daitx ]
+  * d/p/jdk-ppc64el-S8165231.diff: fixes java.nio.Bits.unaligned() on
+    ppc64el. LP: #1677612.
+  * debian/buildwatch.sh: updated to stop it if no 'make' process is running,
+    as it probably means that the build failed - otherwise buildwatch keeps
+    the builder alive until it exits after the timer (3 hours by default)
+    expires.
+
+  [ Matthias Klose ]
+  * openjdk-8-jre-headless: Add a break for tzdata-java. Closes: #857992.
+  * Use fonts-wqy-microhei and fonts-wqy-zenhei instead of transitional package
+    names. Closes: #859528.
+
+ -- Matthias Klose <doko@ubuntu.com>  Mon, 01 May 2017 19:28:19 +0700
+
+openjdk-8 (8u121-b13-4.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * openjdk-8-jre-headless: Add Breaks: tzdata-java to ensure openjdk gets
+    upgraded on dist-upgrades from jessie.  (Closes: #857992)
+
+ -- Andreas Beckmann <anbe@debian.org>  Tue, 18 Apr 2017 22:32:33 +0200
+
+openjdk-8 (8u121-b13-4) unstable; urgency=medium
+
+  * Drop Recommends on obsolete GNOME libraries so they are not in a
+    default GNOME desktop installation (Simon McVittie). Closes: #850268.
+    - sun.net.spi.DefaultProxySelector prefers libglib2.0-0 (>= 2.24)
+      over obsolete libgconf2-4.
+    - sun.nio.fs.GnomeFileTypeDetector prefers libglib2.0-0 (>= 2.24)
+      over libgnomevfs-2-0.
+    - sun.xawt.awt_Desktop prefers libgtk2.0-0 (>= 2.14) over
+      libgnomevfs2-0.
+  * See the bug report for an analysis why this can be done for releases
+    back to Debian wheezy (7.0) and Ubuntu precise (12.04 LTS).
+
+ -- Matthias Klose <doko@ubuntu.com>  Fri, 03 Mar 2017 18:46:54 +0100
+
+openjdk-8 (8u121-b13-3) unstable; urgency=medium
+
+  * Really don't build the JamVM VM.
+  * Fix 8164293: HotSpot leaking memory in long-running requests.
+    Closes: #853758.
+  * Add OpenJDK Stack Unwinder and Frame Decorator for gdb.
+
+ -- Matthias Klose <doko@ubuntu.com>  Wed, 08 Feb 2017 07:24:13 +0100
+
+openjdk-8 (8u121-b13-2) unstable; urgency=medium
+
+  * Fix libjpeg dependency. Closes: #852378.
+
+ -- Matthias Klose <doko@ubuntu.com>  Tue, 24 Jan 2017 14:22:36 +0100
 
 openjdk-8 (8u121-b13-1) unstable; urgency=high
 

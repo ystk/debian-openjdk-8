@@ -5,7 +5,7 @@ Maintainer: OpenJDK Team <openjdk@lists.launchpad.net>
 Uploaders: Matthias Klose <doko@ubuntu.com>
 Build-Depends: debhelper (>= 9), quilt, m4, lsb-release, zip, unzip,
   sharutils, gawk, cpio, pkg-config, procps, wdiff, fastjar (>= 2:0.96-0ubuntu2),
-  autoconf (>= 2.69), automake, autotools-dev, ant, ant-optional, libtool,
+  autoconf (>= 2.69), automake, autotools-dev, ant, ant-optional, 
   g++-4.9,
   openjdk-8-jdk | openjdk-7-jdk,
   libxtst-dev, libxi-dev, libxt-dev, libxaw7-dev, libxrender-dev, libcups2-dev, libasound2-dev, liblcms2-dev, libfreetype6-dev (>= 2.2.1), libgtk2.0-dev, libxinerama-dev, libkrb5-dev, xsltproc, libpcsclite-dev,
@@ -30,6 +30,7 @@ Provides: java-sdk-headless, java2-sdk-headless,
   java5-sdk-headless, java6-sdk-headless,
   java7-sdk-headless, java8-sdk-headless,
 Replaces: openjdk-8-jdk (<< 8u72-b15-4),
+Breaks: ${jrehl:Breaks}
 Description: OpenJDK Development Kit (JDK) (headless)
  OpenJDK is a development environment for building applications,
  applets, and components using the Java programming language.
@@ -166,19 +167,6 @@ Description: Java runtime based on OpenJDK (debugging symbols)
  .
  The packages are built using the IcedTea build support and patches
  from the IcedTea project.
-
-Package: openjdk-8-jre-jamvm
-Architecture: amd64 armel armhf i386 powerpc kfreebsd-i386 kfreebsd-amd64 mips mipsel
-Multi-Arch: same
-Priority: extra
-Pre-Depends: ${dpkg:Depends}
-Depends: openjdk-8-jre-headless (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
-Description: Alternative JVM for OpenJDK, using JamVM
- The package provides an alternative runtime using the JamVM.  This is a
- somewhat faster alternative than the Zero port on architectures like armel,
- mips, mipsel, powerpc.
- .
- The VM is started with the option `-jamvm'. See the README.Debian for details.
 
 Package: openjdk-8-jre-zero
 Architecture: amd64 i386 arm64 ppc64 ppc64el sparc64 kfreebsd-amd64 kfreebsd-i386 

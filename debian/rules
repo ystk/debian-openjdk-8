@@ -156,6 +156,9 @@ ifeq (,$(filter $(distrel),wheezy squeeze lucid))
   jamvm_defaults =
 endif
 
+# disabled, hotspot updates tend to break it too often ...
+jamvm_archs =
+
 altshark_archs = powerpc ppc64 ppc64el
 # Shark build but just crash
 altshark_archs =
@@ -336,7 +339,7 @@ ifeq (,$(filter $(distrel),squeeze wheezy lucid precise quantal raring saucy tru
   endif
 endif
 
-ifneq (,$(filter $(DEB_HOST_ARCH), arm64 sparc64))
+ifneq (,$(filter $(DEB_HOST_ARCH), sparc64))
   USE_PRECOMPILED_HEADER = 0
   export USE_PRECOMPILED_HEADER
 endif
@@ -392,6 +395,8 @@ COMMON_PATCHES = \
 	openjdk-ppc64el-S8170153.patch \
 	jdk-ppc64el-S8170153.patch \
 	jdk-841269-filechooser.patch \
+	8164293.diff \
+	jdk-ppc64el-S8165231.diff \
 
 #	jdk-derived-font-size.diff \
 # FIXME: update patches
@@ -418,12 +423,6 @@ ifeq (,$(filter $(DEB_HOST_ARCH),$(hotspot_aarch64_archs)))
 	hotspot-powerpcspe.diff \
 	zero-sh.diff
 # FIXME	zero-opt.diff
-else
-  # aarch64 hotspot is still 8u112-b16
-  COMMON_PATCHES += \
-	sec-webrev-8u121-aarch64-hotspot-8159507.patch \
-	sec-webrev-8u121-aarch64-hotspot-8161218.patch \
-	sec-webrev-8u121-aarch64-hotspot-8167104.patch
 endif
 
 # FIXME needs an update:
@@ -746,7 +745,7 @@ dlopen_hl_depends = \
 	libcups2, liblcms2-2,
 ifneq (,$(filter $(distrel),squeeze lucid))
   dlopen_hl_depends += libjpeg62,
-else ifneq (,$(filter $(distrel), jessie sid))
+else ifneq (,$(filter $(distrel), jessie stretch sid))
   dlopen_hl_depends += libjpeg62-turbo,
 else
   dlopen_hl_depends += libjpeg8,
@@ -764,18 +763,8 @@ ifneq ($(with_nss),no)
 endif
 dlopen_hl_recommends =
 dlopen_jre_depends = \
-	libgtk2.0-0, libxrandr2, libxinerama1, libgl1-mesa-glx | libgl1
+	libglib2.0-0 (>= 2.24), libgtk2.0-0 (>= 2.14), libxrandr2, libxinerama1, libgl1-mesa-glx | libgl1
 dlopen_jre_recommends =
-# these are not yet ready for multiarch
-ifneq (,$(DEB_HOST_MULTIARCH))
-  ifneq (,$(filter $(distrel),jessie wheezy squeeze precise trusty vivid wily))
-    dlopen_jre_recommends += , libgnome2-0, libgnomevfs2-0, libgconf2-4
-  else
-    dlopen_jre_recommends += , libgnome-2-0, libgnomevfs2-0, libgconf-2-4
-  endif
-else
-  dlopen_jre_depends += , libgnome2-0, libgnomevfs2-0, libgconf2-4
-endif
 
 plugin_name = IcedTeaPlugin.so
 browser_plugin_dirs = mozilla
@@ -801,7 +790,11 @@ else
   cfk_fonts = fonts-nanum,
   cjk_fonts += fonts-ipafont-gothic, fonts-ipafont-mincho,
 endif
-cjk_fonts += $(if $(with_wgy_zenhai),ttf-wqy-microhei | ttf-wqy-zenhei,ttf-arphic-uming),
+ifneq (,$(filter $(distrel), wheezy jessie precise trusty xenial yakkety))
+  cjk_fonts += $(if $(with_wgy_zenhai),ttf-wqy-microhei | ttf-wqy-zenhei,ttf-arphic-uming),
+else
+  cjk_fonts += fonts-wqy-microhei, fonts-wqy-zenhei,
+endif
 ifneq (,$(filter $(distrel),squeeze wheezy))
   cjk_fonts += ttf-indic-fonts,
 else ifneq (,$(filter $(distrel), lucid maverick natty oneiric precise quantal raring saucy trusty))
@@ -898,6 +891,11 @@ ifneq (,$(filter $(distrel), squeeze wheezy jessie lucid precise quantal raring 
   control_vars += '-Vmountpoint:Depends=initscripts'
 else
   control_vars += '-Vmountpoint:Depends=util-linux (>= 2.26.2-4)'
+endif
+
+control_vars += '-Vjrehl:Breaks=$(jrehl_breaks)'
+ifeq (,$(filter $(distrel), wheezy jessie precise trusty xenial yakkety zesty))
+  jrehl_breaks = tzdata-java
 endif
 
 pkg_jcommon = java-common (>= 0.28)
@@ -1195,6 +1193,10 @@ else
   JTREG_OPTIONS = -timeout:3
 endif
 
+ifeq (,$(filter $(distrel),wheezy trusty))
+  JTREG_OPTIONS += -conc:auto
+endif
+
 ifneq (,$(filter $(DEB_HOST_ARCH), armel armhf))
   JTREG_OPTIONS += -Xmx256M -vmoption:-Xmx256M
 endif
@@ -1383,8 +1385,7 @@ stamps/jtreg-check-default: stamps/build stamps/xvfb-check
 	touch $@
 
 stamps/jtreg-check-jamvm: stamps/build stamps/xvfb-check
-	ICEDTEA_JTREG_OTHERVM=-othervm \
-	  $(MAKE) -f debian/rules jtreg-run-check VMNAME=jamvm VMARGS='-vmoption:-jamvm' \
+	$(MAKE) -f debian/rules jtreg-run-check VMNAME=jamvm VMARGS='-vmoption:-jamvm' \
 		TEST_SUITES='hotspot langtools'
 	touch $@
 
@@ -1488,7 +1489,7 @@ check-hotspot: stamps/build
 	mkdir -p test/hotspot/JTwork test/hotspot/JTreport
 	JT_JAVA=$(BOOTJDK_HOME) jtreg -v1 -a -ignore:quiet \
 		-w:test/hotspot/JTwork -r:test/hotspot/JTreport \
-		-agentvm -conc:auto \
+		-agentvm \
 		-jdk:$(builddir)/$(sdkimg) \
 		$(JTREG_OPTIONS) \
 		$(CURDIR)/$(srcdir)/hotspot/test \
@@ -1498,8 +1499,7 @@ check-langtools: stamps/build
 	mkdir -p test/langtools/JTwork test/langtools/JTreport
 	JT_JAVA=$(BOOTJDK_HOME) jtreg -v1 -a -ignore:quiet \
 		-w:test/langtools/JTwork -r:test/langtools/JTreport \
-		-agentvm -conc:auto \
-		$${JTREG_OTHERVM:--samevm} \
+		-agentvm \
 		-jdk:$(builddir)/$(sdkimg) \
 		$(JTREG_OPTIONS) \
 		-exclude:debian/excludelist.langtools.jtx \
@@ -1516,8 +1516,7 @@ check-jdk: stamps/build stamps/xvfb-check
 	$(if $(DISPLAY),,$(XVFB_RUN_CMD)) \
 	JT_JAVA=$(BOOTJDK_HOME) jtreg -v1 -a -ignore:quiet \
 		-w:test/jdk/JTwork -r:test/jdk/JTreport \
-		-agentvm -conc:auto \
-		$${JTREG_OTHERVM:--samevm} \
+		-agentvm \
 		-jdk:$(builddir)/$(sdkimg) \
 		$(JTREG_OPTIONS) \
 		-exclude:debian/excludelist.jdk.jtx \
@@ -2114,6 +2113,18 @@ ifeq ($(with_systemtap),yes FIXME)
 	cp -p build/tapset/hotspot.stp $(d_jrehl)/usr/share/systemtap/tapset/
 endif
 
+	: # OpenJDK Stack Unwinder and Frame Decorator
+ifneq (,$(filter $(DEB_HOST_ARCH),amd64 kfreebsd-amd64))
+	mkdir -p $(d_jrehl)/usr/share/gdb/auto-load/$(basedir)/jre/lib/$(archdir)/server
+	cp debian/dbg8.py \
+	  $(d_jrehl)/usr/share/gdb/auto-load/$(basedir)/jre/lib/$(archdir)/server/libjvm.so-gdb.py
+  ifneq (,$(filter zero, $(alternate_vms)))
+	mkdir -p $(d_jrez)/usr/share/gdb/auto-load/$(basedir)/jre/lib/$(archdir)/zero
+	ln -sf ../server/libjvm.so-gdb.py \
+	  $(d_jrez)/usr/share/gdb/auto-load/$(basedir)/jre/lib/$(archdir)/zero/libjvm.so
+  endif
+endif
+
 ifeq (0,1)
 	: # Install stuff to generate font config and timezone files.
 	mkdir -p $(d_jrehl)/$(commonbasedir)/jre/lib
@@ -2262,14 +2273,14 @@ endif
 is_release		=
 is_release		= yes
 hg_project		= jdk8u
-hg_tag			= jdk8u121-b13
+hg_tag			= jdk8u131-b11
 package_version		= $(subst jdk,,$(hg_tag))
 ifneq ($(is_release),yes)
   package_version	:= $(subst -,~,$(package_version))
 endif
 hg_url			= http://hg.openjdk.java.net/jdk8u/$(hg_project)
 hg_project_aarch64	= jdk8u
-hg_tag_aarch64		= aarch64-jdk8u112-b16
+hg_tag_aarch64		= aarch64-jdk8u131-b12
 hg_url_aarch64		= http://hg.openjdk.java.net/aarch64-port/$(hg_project_aarch64)
 origdir = ../openjdk-8-$(package_version).orig
 get-orig:
