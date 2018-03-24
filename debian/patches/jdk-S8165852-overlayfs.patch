@@ -1,0 +1,33 @@
+
+# HG changeset patch
+# User andrew
+# Date 1508176939 -3600
+# Node ID b107345220cbc3f25cbaa4bc84a4b345b8d5cccb
+# Parent  fed53dfb884f78afcca8377fc01f7f801f052f57
+8165852, PR3468: (fs) Mount point not found for a file which is present in overlayfs
+Summary: Check /proc/mounts for directories not in /etc/mtab
+Contributed-by: Fridrich Strba <fridrich.strba@suse.com>
+
+diff -r fed53dfb884f -r b107345220cb src/solaris/classes/sun/nio/fs/LinuxFileStore.java
+--- openjdk/jdk/src/solaris/classes/sun/nio/fs/LinuxFileStore.java	Tue Dec 20 14:08:20 2016 +0300
++++ openjdk/jdk/src/solaris/classes/sun/nio/fs/LinuxFileStore.java	Mon Oct 16 19:02:19 2017 +0100
+@@ -74,8 +74,16 @@
+             } catch (UnixException x) {
+                 x.rethrowAsIOException(parent);
+             }
+-            if (attrs.dev() != dev())
+-                break;
++            if (attrs.dev() != dev()) {
++
++                // step 3: lookup mounted file systems (use /proc/mounts to ensure we
++                // find the file system even when not in /etc/mtab)
++                byte[] dir = path.asByteArray();
++                for (UnixMountEntry entry: fs.getMountEntries("/proc/mounts")) {
++                    if (Arrays.equals(dir, entry.dir()))
++                        return entry;
++                }
++            }
+             path = parent;
+             parent = parent.getParent();
+         }
+

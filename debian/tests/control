@@ -6,12 +6,3 @@ Depends: openjdk-8-jdk, jtreg, dpkg-dev, gcc
 
 Test-Command: debian/tests/jtreg-autopkgtest jdk 
 Depends: openjdk-8-jdk, jtreg, dpkg-dev, gcc, xfwm4, xvfb
-
-Test-Command: debian/tests/jtreg-autopkgtest hotspot -vmoption:-jamvm
-Depends: openjdk-8-jdk, jtreg, dpkg-dev, gcc
-
-Test-Command: debian/tests/jtreg-autopkgtest langtools -vmoption:-jamvm
-Depends: openjdk-8-jdk, jtreg, dpkg-dev, gcc
-
-Test-Command: debian/tests/jtreg-autopkgtest jdk -vmoption:-jamvm
-Depends: openjdk-8-jdk, jtreg, dpkg-dev, gcc, xfwm4, xvfb

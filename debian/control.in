@@ -4,17 +4,18 @@ Priority: optional
 Maintainer: OpenJDK Team <openjdk@lists.launchpad.net>
 Uploaders: Matthias Klose <doko@ubuntu.com>
 Build-Depends: debhelper (>= 9), quilt, m4, lsb-release, zip, unzip,
-  sharutils, gawk, cpio, pkg-config, procps, wdiff, @bd_fastjar@
-  @bd_autotools@ @bd_ant@ @bd_jamvm@
+  sharutils, gawk, cpio, pkg-config, procps, wdiff, tzdata,
+  @bd_fastjar@
+  @bd_autotools@ @bd_ant@
   @bd_gcc@
   @bd_bootstrap@
   @bd_openjdk@
   @bd_zero@ @bd_shark@
   @bd_syslibs@ @bd_pulsejava@ @bd_systemtap@
-  @bd_nss@ @bd_tzdata@
+  @bd_nss@
   @bd_mauve@ @bd_jtreg@ @bd_xvfb@
   time, @bd_cross@
-Standards-Version: 3.9.8
+Standards-Version: 4.1.3
 Homepage: http://openjdk.java.net/
 Vcs-Bzr: http://bazaar.launchpad.net/~openjdk/openjdk/openjdk8
 Vcs-Browser: https://code.launchpad.net/~openjdk/openjdk/openjdk8
@@ -30,7 +31,6 @@ Provides: java-sdk-headless, java2-sdk-headless,
   java5-sdk-headless, java6-sdk-headless,
   java7-sdk-headless, java8-sdk-headless,
 Replaces: @basename@-jdk (<< 8u72-b15-4),
-Breaks: ${jrehl:Breaks}
 Description: OpenJDK Development Kit (JDK) (headless)
  OpenJDK is a development environment for building applications,
  applets, and components using the Java programming language.
@@ -41,14 +41,13 @@ Description: OpenJDK Development Kit (JDK) (headless)
 Package: @basename@-jre-headless
 Architecture: @any_archs@
 Multi-Arch: same
-Pre-Depends: ${dpkg:Depends}, ${multiarch:Depends}
+Pre-Depends: ${dpkg:Depends}
 Depends: ${jredefault:Depends}, ${cacert:Depends},
   ${tzdata:Depends}, ${jcommon:Depends}, ${dlopenhl:Depends},
   ${mountpoint:Depends},
   ${shlibs:Depends}, ${misc:Depends}
-Recommends: ${dlopenhl:Recommends}, ${jamvm:Recommends}
-Suggests: ${jamvm:Suggests},
-  libnss-mdns,
+Recommends: ${dlopenhl:Recommends}
+Suggests: libnss-mdns,
   @core_fonts@,
   @cjk_fonts@
 Provides: java2-runtime-headless,
@@ -56,7 +55,7 @@ Provides: java2-runtime-headless,
   java7-runtime-headless, java8-runtime-headless,
   ${defaultvm:Provides}, ${jvm:Provides}
 Breaks: oracle-java8-installer (<< 8u77+8u77arm-1),
-  ca-certificates-java (<< 20160321~)
+  ${jrehl:Breaks}
 Description: OpenJDK Java runtime, using ${vm:Name} (headless)
  Minimal Java runtime - needed for executing non GUI Java programs,
  using ${vm:Name}.
@@ -105,7 +104,7 @@ Description: OpenJDK Java runtime, using ${vm:Name}
 
 Package: @basename@-demo
 Architecture: @any_archs@
-Priority: extra
+Priority: optional
 Pre-Depends: ${dpkg:Depends}
 Depends: @basename@-jre (= ${binary:Version}),
   ${shlibs:Depends}, ${misc:Depends}
@@ -117,7 +116,7 @@ Description: Java runtime based on OpenJDK (demos and examples)
 
 Package: @basename@-source
 Architecture: all
-Priority: extra
+Priority: optional
 Pre-Depends: ${dpkg:Depends}
 Depends: @basename@-jre (>= ${source:Version}),
   @basename@-jdk (>= ${binary:Version}),
@@ -137,7 +136,7 @@ Package: @basename@-doc
 Section: doc
 Pre-Depends: ${dpkg:Depends}
 Architecture: all
-Priority: extra
+Priority: optional
 Depends: ${misc:Depends}
 Suggests: @basename@-jdk
 Description: OpenJDK Development Kit (JDK) documentation
@@ -152,7 +151,7 @@ Description: OpenJDK Development Kit (JDK) documentation
 Package: @basename@-dbg
 Architecture: @any_archs@
 Multi-Arch: same
-Priority: extra
+Priority: optional
 Section: debug
 Pre-Depends: ${dpkg:Depends}
 Depends: @basename@-jre-headless (= ${binary:Version}),

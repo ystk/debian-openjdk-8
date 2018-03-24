@@ -1,0 +1,74 @@
+
+# HG changeset patch
+# User aph
+# Date 1516634342 0
+# Node ID 69d1a15904857fb6dc9c34fde48db62a82f1368a
+# Parent  d47392528c658d904ce76075130c75d64fda3ceb
+8194739: Zero port of 8174962: Better interface invocations
+Reviewed-by: adinn, coleenp
+
+diff -r d47392528c65 -r 69d1a1590485 src/hotspot/cpu/zero/methodHandles_zero.cpp
+--- a/hotspot/src/cpu/zero/vm/methodHandles_zero.cpp	Tue Dec 19 17:31:53 2017 -0500
++++ b/hotspot/src/cpu/zero/vm/methodHandles_zero.cpp	Mon Jan 22 15:19:02 2018 +0000
+@@ -183,3 +183,9 @@
+     return NULL;
+   }
+ }
++
++#ifndef PRODUCT
++void MethodHandles::trace_method_handle(MacroAssembler* _masm, const char* adaptername) {
++  // This is just a stub.
++}
++#endif //PRODUCT
+diff -r d47392528c65 -r 69d1a1590485 src/hotspot/share/interpreter/bytecodeInterpreter.cpp
+--- a/hotspot/src/share/vm/interpreter/bytecodeInterpreter.cpp	Tue Dec 19 17:31:53 2017 -0500
++++ b/hotspot/src/share/vm/interpreter/bytecodeInterpreter.cpp	Mon Jan 22 15:19:02 2018 +0000
+@@ -2535,13 +2535,35 @@
+ 
+         // this could definitely be cleaned up QQQ
+         Method* callee;
+-        Klass* iclass = cache->f1_as_klass();
+-        // InstanceKlass* interface = (InstanceKlass*) iclass;
++        Method *interface_method = cache->f2_as_interface_method();
++        InstanceKlass* iclass = interface_method->method_holder();
++
+         // get receiver
+         int parms = cache->parameter_size();
+         oop rcvr = STACK_OBJECT(-parms);
+         CHECK_NULL(rcvr);
+         InstanceKlass* int2 = (InstanceKlass*) rcvr->klass();
++
++        // Receiver subtype check against resolved interface klass (REFC).
++        {
++          Klass* refc = cache->f1_as_klass();
++          itableOffsetEntry* scan;
++          for (scan = (itableOffsetEntry*) int2->start_of_itable();
++               scan->interface_klass() != NULL;
++               scan++) {
++            if (scan->interface_klass() == refc) {
++              break;
++            }
++          }
++          // Check that the entry is non-null.  A null entry means
++          // that the receiver class doesn't implement the
++          // interface, and wasn't the same as when the caller was
++          // compiled.
++          if (scan->interface_klass() == NULL) {
++            VM_JAVA_ERROR(vmSymbols::java_lang_IncompatibleClassChangeError(), "", note_no_trap);
++          }
++        }
++
+         itableOffsetEntry* ki = (itableOffsetEntry*) int2->start_of_itable();
+         int i;
+         for ( i = 0 ; i < int2->itable_length() ; i++, ki++ ) {
+@@ -2553,7 +2575,8 @@
+         if (i == int2->itable_length()) {
+           VM_JAVA_ERROR(vmSymbols::java_lang_IncompatibleClassChangeError(), "", note_no_trap);
+         }
+-        int mindex = cache->f2_as_index();
++        int mindex = interface_method->itable_index();
++
+         itableMethodEntry* im = ki->first_method_entry(rcvr->klass());
+         callee = im[mindex].method();
+         if (callee == NULL) {
+

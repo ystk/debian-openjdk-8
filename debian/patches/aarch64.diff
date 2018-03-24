@@ -6,7 +6,7 @@
  	# Some are omitted here because they have special meanings below.
  	1750a | 580 \
  	| a29k \
-+        | aarch64 \
++	| aarch64 \
  	| alpha | alphaev[4-8] | alphaev56 | alphaev6[78] | alphapca5[67] \
  	| alpha64 | alpha64ev[4-8] | alpha64ev56 | alpha64ev6[78] | alpha64pca5[67] \
  	| am33_2.0 \
@@ -14,96 +14,10 @@
  	# Recognize the basic CPU types with company name.
  	580-* \
  	| a29k-* \
-+        | aarch64-* \
++	| aarch64-* \
  	| alpha-* | alphaev[4-8]-* | alphaev56-* | alphaev6[78]-* \
  	| alpha64-* | alpha64ev[4-8]-* | alpha64ev56-* | alpha64ev6[78]-* \
  	| alphapca5[67]-* | alpha64pca5[67]-* | arc-* \
---- a/common/autoconf/generated-configure.sh
-+++ b/common/autoconf/generated-configure.sh
-@@ -6868,6 +6868,12 @@ test -n "$target_alias" &&
-       VAR_CPU_BITS=64
-       VAR_CPU_ENDIAN=little
-       ;;
-+    aarch64)
-+      VAR_CPU=aarch64
-+      VAR_CPU_ARCH=aarch64
-+      VAR_CPU_BITS=64
-+      VAR_CPU_ENDIAN=little
-+      ;;
-     powerpc)
-       VAR_CPU=ppc
-       VAR_CPU_ARCH=ppc
-@@ -7005,6 +7011,12 @@ $as_echo "$OPENJDK_BUILD_OS-$OPENJDK_BUI
-       VAR_CPU_BITS=64
-       VAR_CPU_ENDIAN=little
-       ;;
-+    aarch64)
-+      VAR_CPU=aarch64
-+      VAR_CPU_ARCH=aarch64
-+      VAR_CPU_BITS=64
-+      VAR_CPU_ENDIAN=little
-+      ;;
-     powerpc)
-       VAR_CPU=ppc
-       VAR_CPU_ARCH=ppc
-@@ -7975,11 +7987,6 @@ $as_echo "$with_jvm_variants" >&6; }
-   JVM_VARIANT_ZEROSHARK=`$ECHO "$JVM_VARIANTS" | $SED -e '/,zeroshark,/!s/.*/false/g' -e '/,zeroshark,/s/.*/true/g'`
-   JVM_VARIANT_CORE=`$ECHO "$JVM_VARIANTS" | $SED -e '/,core,/!s/.*/false/g' -e '/,core,/s/.*/true/g'`
- 
--  if test "x$JVM_VARIANT_CLIENT" = xtrue; then
--    if test "x$OPENJDK_TARGET_CPU_BITS" = x64; then
--      as_fn_error $? "You cannot build a client JVM for a 64-bit machine." "$LINENO" 5
--    fi
--  fi
-   if test "x$JVM_VARIANT_KERNEL" = xtrue; then
-     if test "x$OPENJDK_TARGET_CPU_BITS" = x64; then
-       as_fn_error $? "You cannot build a kernel JVM for a 64-bit machine." "$LINENO" 5
-@@ -29731,7 +29738,7 @@ fi
-   #
-   case $COMPILER_NAME in
-     gcc )
--      COMMON_CCXXFLAGS_JDK="$COMMON_CCXXFLAGS $COMMON_CCXXFLAGS_JDK -W -Wall -Wno-unused -Wno-parentheses \
-+      COMMON_CCXXFLAGS_JDK="$COMMON_CCXXFLAGS $COMMON_CCXXFLAGS_JDK -W -Wall -Wno-unused -Wno-unused-parameter -Wno-parentheses \
-       -pipe \
-       -D_GNU_SOURCE -D_REENTRANT -D_LARGEFILE64_SOURCE"
-       CXXSTD_CXXFLAG="-std=gnu++98"
-@@ -30235,6 +30242,9 @@ $as_echo "$supports" >&6; }
-     s390)
-       ZERO_ARCHFLAG="${COMPILER_TARGET_BITS_FLAG}31"
-       ;;
-+    aarch64)
-+      ZERO_ARCHFLAG=""
-+      ;;
-     *)
-       ZERO_ARCHFLAG="${COMPILER_TARGET_BITS_FLAG}${OPENJDK_TARGET_CPU_BITS}"
-   esac
---- a/common/autoconf/jdk-options.m4
-+++ b/common/autoconf/jdk-options.m4
-@@ -164,6 +164,9 @@ AC_DEFUN_ONCE([JDKOPT_SETUP_JVM_VARIANTS
-   if test "x$OPENJDK_TARGET_CPU" = xaarch64; then
-     INCLUDE_SA=false
-   fi
-+  if test "x$OPENJDK_TARGET_CPU" = xaarch64; then
-+    INCLUDE_SA=false
-+  fi
-   AC_SUBST(INCLUDE_SA)
- 
-   if test "x$OPENJDK_TARGET_OS" = "xmacosx"; then
---- a/common/autoconf/platform.m4
-+++ b/common/autoconf/platform.m4
-@@ -54,6 +54,12 @@ AC_DEFUN([PLATFORM_EXTRACT_VARS_FROM_CPU
-       VAR_CPU_BITS=64
-       VAR_CPU_ENDIAN=little
-       ;;
-+    aarch64)
-+      VAR_CPU=aarch64
-+      VAR_CPU_ARCH=aarch64
-+      VAR_CPU_BITS=64
-+      VAR_CPU_ENDIAN=little
-+      ;;
-     powerpc)
-       VAR_CPU=ppc
-       VAR_CPU_ARCH=ppc
 --- a/common/autoconf/toolchain.m4
 +++ b/common/autoconf/toolchain.m4
 @@ -1018,7 +1018,7 @@ AC_DEFUN_ONCE([TOOLCHAIN_SETUP_COMPILER_
@@ -155,7 +69,7 @@
  #define X_ZERO          6
  #define X_ARM           7
  #define X_PPC           8
-+#define X_AARCH64	9
++#define X_AARCH64       9
  
  // **********************************
  // Make sure you set X_PLATFORM and X_ARCH defines correctly.

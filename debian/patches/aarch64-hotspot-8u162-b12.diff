@@ -1,0 +1,2010 @@
+diff -r 76540c2dc48d agent/src/share/classes/sun/jvm/hotspot/tools/ClassLoaderStats.java
+--- openjdk/hotspot/agent/src/share/classes/sun/jvm/hotspot/tools/ClassLoaderStats.java	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/agent/src/share/classes/sun/jvm/hotspot/tools/ClassLoaderStats.java	Fri Mar 02 20:53:52 2018 -0300
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -103,11 +103,12 @@
+       }
+ 
+       SystemDictionary dict = VM.getVM().getSystemDictionary();
+-      dict.classesDo(new SystemDictionary.ClassAndLoaderVisitor() {
+-                        public void visit(Klass k, Oop loader) {
++      dict.classesDo(new SystemDictionary.ClassVisitor() {
++                        public void visit(Klass k) {
+                            if (! (k instanceof InstanceKlass)) {
+                               return;
+                            }
++                           Oop loader = ((InstanceKlass) k).getClassLoader();
+                            LoaderData ld = (loader != null) ? (LoaderData)loaderMap.get(loader)
+                                                             : bootstrapLoaderData;
+                            if (ld != null) {
+diff -r 76540c2dc48d agent/src/share/classes/sun/jvm/hotspot/utilities/soql/sa.js
+--- openjdk/hotspot/agent/src/share/classes/sun/jvm/hotspot/utilities/soql/sa.js	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/agent/src/share/classes/sun/jvm/hotspot/utilities/soql/sa.js	Fri Mar 02 20:53:52 2018 -0300
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2004, 2013, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -804,6 +804,16 @@
+ // VM type to SA class map
+ var  vmType2Class = new Object();
+ 
++// C2 only classes
++try{
++  vmType2Class["ExceptionBlob"] = sapkg.code.ExceptionBlob;
++  vmType2Class["UncommonTrapBlob"] = sapkg.code.UncommonTrapBlob;
++} catch(e) {
++  // Ignore exception. C2 specific objects might be not 
++  // available in client VM
++}
++
++
+ // This is *not* exhaustive. Add more if needed.
+ // code blobs
+ vmType2Class["BufferBlob"] = sapkg.code.BufferBlob;
+@@ -812,10 +822,8 @@
+ vmType2Class["SafepointBlob"] = sapkg.code.SafepointBlob;
+ vmType2Class["C2IAdapter"] = sapkg.code.C2IAdapter;
+ vmType2Class["DeoptimizationBlob"] = sapkg.code.DeoptimizationBlob;
+-vmType2Class["ExceptionBlob"] = sapkg.code.ExceptionBlob;
+ vmType2Class["I2CAdapter"] = sapkg.code.I2CAdapter;
+ vmType2Class["OSRAdapter"] = sapkg.code.OSRAdapter;
+-vmType2Class["UncommonTrapBlob"] = sapkg.code.UncommonTrapBlob;
+ vmType2Class["PCDesc"] = sapkg.code.PCDesc;
+ 
+ // interpreter
+diff -r 76540c2dc48d src/cpu/ppc/vm/assembler_ppc.hpp
+--- openjdk/hotspot/src/cpu/ppc/vm/assembler_ppc.hpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/cpu/ppc/vm/assembler_ppc.hpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1180,6 +1180,8 @@
+   inline void mullw_( Register d, Register a, Register b);
+   inline void mulhw(  Register d, Register a, Register b);
+   inline void mulhw_( Register d, Register a, Register b);
++  inline void mulhwu( Register d, Register a, Register b);
++  inline void mulhwu_(Register d, Register a, Register b);
+   inline void mulhd(  Register d, Register a, Register b);
+   inline void mulhd_( Register d, Register a, Register b);
+   inline void mulhdu( Register d, Register a, Register b);
+diff -r 76540c2dc48d src/cpu/ppc/vm/assembler_ppc.inline.hpp
+--- openjdk/hotspot/src/cpu/ppc/vm/assembler_ppc.inline.hpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/cpu/ppc/vm/assembler_ppc.inline.hpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -109,6 +109,8 @@
+ inline void Assembler::mullw_( Register d, Register a, Register b) { emit_int32(MULLW_OPCODE  | rt(d) | ra(a) | rb(b) | oe(0) | rc(1)); }
+ inline void Assembler::mulhw(  Register d, Register a, Register b) { emit_int32(MULHW_OPCODE  | rt(d) | ra(a) | rb(b) | rc(0)); }
+ inline void Assembler::mulhw_( Register d, Register a, Register b) { emit_int32(MULHW_OPCODE  | rt(d) | ra(a) | rb(b) | rc(1)); }
++inline void Assembler::mulhwu( Register d, Register a, Register b) { emit_int32(MULHWU_OPCODE | rt(d) | ra(a) | rb(b) | rc(0)); }
++inline void Assembler::mulhwu_(Register d, Register a, Register b) { emit_int32(MULHWU_OPCODE | rt(d) | ra(a) | rb(b) | rc(1)); }
+ inline void Assembler::mulhd(  Register d, Register a, Register b) { emit_int32(MULHD_OPCODE  | rt(d) | ra(a) | rb(b) | rc(0)); }
+ inline void Assembler::mulhd_( Register d, Register a, Register b) { emit_int32(MULHD_OPCODE  | rt(d) | ra(a) | rb(b) | rc(1)); }
+ inline void Assembler::mulhdu( Register d, Register a, Register b) { emit_int32(MULHDU_OPCODE | rt(d) | ra(a) | rb(b) | rc(0)); }
+diff -r 76540c2dc48d src/cpu/ppc/vm/c2_init_ppc.cpp
+--- openjdk/hotspot/src/cpu/ppc/vm/c2_init_ppc.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/cpu/ppc/vm/c2_init_ppc.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -45,4 +45,10 @@
+       FLAG_SET_ERGO(bool, InsertEndGroupPPC64, true);
+     }
+   }
++
++  if (OptimizeFill) {
++    warning("OptimizeFill is not supported on this CPU.");
++    FLAG_SET_DEFAULT(OptimizeFill, false);
++  }
++
+ }
+diff -r 76540c2dc48d src/cpu/ppc/vm/ppc.ad
+--- openjdk/hotspot/src/cpu/ppc/vm/ppc.ad	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/cpu/ppc/vm/ppc.ad	Fri Mar 02 20:53:52 2018 -0300
+@@ -1,6 +1,6 @@
+ //
+ // Copyright (c) 2011, 2014, Oracle and/or its affiliates. All rights reserved.
+-// Copyright 2012, 2014 SAP AG. All rights reserved.
++// Copyright (c) 2012, 2017 SAP SE. All rights reserved.
+ // DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ //
+ // This code is free software; you can redistribute it and/or modify it
+@@ -8610,6 +8610,44 @@
+   ins_pipe(pipe_class_default);
+ %}
+ 
++// Bitfield Extract: URShiftI + AndI
++instruct andI_urShiftI_regI_immI_immIpow2minus1(iRegIdst dst, iRegIsrc src1, immI src2, immIpow2minus1 src3) %{
++  match(Set dst (AndI (URShiftI src1 src2) src3));
++
++  format %{ "EXTRDI  $dst, $src1, shift=$src2, mask=$src3 \t// int bitfield extract" %}
++  size(4);
++  ins_encode %{
++    // TODO: PPC port $archOpcode(ppc64Opcode_rldicl);
++    int rshift = ($src2$$constant) & 0x1f;
++    int length = log2_long(((jlong) $src3$$constant) + 1);
++    if (rshift + length > 32) {
++      // if necessary, adjust mask to omit rotated bits.
++      length = 32 - rshift;
++    }
++    __ extrdi($dst$$Register, $src1$$Register, length, 64 - (rshift + length));
++  %}
++  ins_pipe(pipe_class_default);
++%}
++
++// Bitfield Extract: URShiftL + AndL
++instruct andL_urShiftL_regL_immI_immLpow2minus1(iRegLdst dst, iRegLsrc src1, immI src2, immLpow2minus1 src3) %{
++  match(Set dst (AndL (URShiftL src1 src2) src3));
++
++  format %{ "EXTRDI  $dst, $src1, shift=$src2, mask=$src3 \t// long bitfield extract" %}
++  size(4);
++  ins_encode %{
++    // TODO: PPC port $archOpcode(ppc64Opcode_rldicl);
++    int rshift  = ($src2$$constant) & 0x3f;
++    int length = log2_long(((jlong) $src3$$constant) + 1);
++    if (rshift + length > 64) {
++      // if necessary, adjust mask to omit rotated bits.
++      length = 64 - rshift;
++    }
++    __ extrdi($dst$$Register, $src1$$Register, length, 64 - (rshift + length));
++  %}
++  ins_pipe(pipe_class_default);
++%}
++
+ instruct sxtI_reg(iRegIdst dst, iRegIsrc src) %{
+   match(Set dst (ConvL2I (ConvI2L src)));
+ 
+@@ -8889,6 +8927,19 @@
+   ins_pipe(pipe_class_default);
+ %}
+ 
++// Left shifted Immediate And
++instruct andI_reg_immIhi16(iRegIdst dst, iRegIsrc src1, immIhi16  src2, flagsRegCR0 cr0) %{
++  match(Set dst (AndI src1 src2));
++  effect(KILL cr0);
++  format %{ "ANDIS   $dst, $src1, $src2.hi" %}
++  size(4);
++  ins_encode %{
++    // TODO: PPC port $archOpcode(ppc64Opcode_andis_);
++    __ andis_($dst$$Register, $src1$$Register, (int)((unsigned short)(($src2$$constant & 0xFFFF0000) >> 16)));
++  %}
++  ins_pipe(pipe_class_default);
++%}
++
+ // Immediate And
+ instruct andI_reg_uimm16(iRegIdst dst, iRegIsrc src1, uimmI16 src2, flagsRegCR0 cr0) %{
+   match(Set dst (AndI src1 src2));
+@@ -10571,6 +10622,17 @@
+   ins_pipe(pipe_class_compare);
+ %}
+ 
++instruct cmpP_reg_null(flagsReg crx, iRegP_N2P src1, immP_0or1 src2) %{
++  match(Set crx (CmpP src1 src2));
++  format %{ "CMPLDI   $crx, $src1, $src2 \t// ptr" %}
++  size(4);
++  ins_encode %{
++    // TODO: PPC port $archOpcode(ppc64Opcode_cmpl);
++    __ cmpldi($crx$$CondRegister, $src1$$Register, (int)((short)($src2$$constant & 0xFFFF)));
++  %}
++  ins_pipe(pipe_class_compare);
++%}
++
+ // Used in postalloc expand.
+ instruct cmpP_reg_imm16(flagsReg crx, iRegPsrc src1, immL16 src2) %{
+   // This match rule prevents reordering of node before a safepoint.
+diff -r 76540c2dc48d src/cpu/ppc/vm/sharedRuntime_ppc.cpp
+--- openjdk/hotspot/src/cpu/ppc/vm/sharedRuntime_ppc.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/cpu/ppc/vm/sharedRuntime_ppc.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -42,6 +42,8 @@
+ #include "opto/runtime.hpp"
+ #endif
+ 
++#include <alloca.h>
++
+ #define __ masm->
+ 
+ #ifdef PRODUCT
+@@ -3269,3 +3271,245 @@
+   return RuntimeStub::new_runtime_stub(name, &buffer, frame_complete, frame_size_in_bytes/wordSize,
+                                        oop_maps, true);
+ }
++
++
++//------------------------------Montgomery multiplication------------------------
++//
++
++// Subtract 0:b from carry:a. Return carry.
++static unsigned long
++sub(unsigned long a[], unsigned long b[], unsigned long carry, long len) {
++  long i = 0;
++  unsigned long tmp, tmp2;
++  __asm__ __volatile__ (
++    "subfc  %[tmp], %[tmp], %[tmp]   \n" // pre-set CA
++    "mtctr  %[len]                   \n"
++    "0:                              \n"
++    "ldx    %[tmp], %[i], %[a]       \n"
++    "ldx    %[tmp2], %[i], %[b]      \n"
++    "subfe  %[tmp], %[tmp2], %[tmp]  \n" // subtract extended
++    "stdx   %[tmp], %[i], %[a]       \n"
++    "addi   %[i], %[i], 8            \n"
++    "bdnz   0b                       \n"
++    "addme  %[tmp], %[carry]         \n" // carry + CA - 1
++    : [i]"+b"(i), [tmp]"=&r"(tmp), [tmp2]"=&r"(tmp2)
++    : [a]"r"(a), [b]"r"(b), [carry]"r"(carry), [len]"r"(len)
++    : "ctr", "xer", "memory"
++  );
++  return tmp;
++}
++
++// Multiply (unsigned) Long A by Long B, accumulating the double-
++// length result into the accumulator formed of T0, T1, and T2.
++inline void MACC(unsigned long A, unsigned long B, unsigned long &T0, unsigned long &T1, unsigned long &T2) {
++  unsigned long hi, lo;
++  __asm__ __volatile__ (
++    "mulld  %[lo], %[A], %[B]    \n"
++    "mulhdu %[hi], %[A], %[B]    \n"
++    "addc   %[T0], %[T0], %[lo]  \n"
++    "adde   %[T1], %[T1], %[hi]  \n"
++    "addze  %[T2], %[T2]         \n"
++    : [hi]"=&r"(hi), [lo]"=&r"(lo), [T0]"+r"(T0), [T1]"+r"(T1), [T2]"+r"(T2)
++    : [A]"r"(A), [B]"r"(B)
++    : "xer"
++  );
++}
++
++// As above, but add twice the double-length result into the
++// accumulator.
++inline void MACC2(unsigned long A, unsigned long B, unsigned long &T0, unsigned long &T1, unsigned long &T2) {
++  unsigned long hi, lo;
++  __asm__ __volatile__ (
++    "mulld  %[lo], %[A], %[B]    \n"
++    "mulhdu %[hi], %[A], %[B]    \n"
++    "addc   %[T0], %[T0], %[lo]  \n"
++    "adde   %[T1], %[T1], %[hi]  \n"
++    "addze  %[T2], %[T2]         \n"
++    "addc   %[T0], %[T0], %[lo]  \n"
++    "adde   %[T1], %[T1], %[hi]  \n"
++    "addze  %[T2], %[T2]         \n"
++    : [hi]"=&r"(hi), [lo]"=&r"(lo), [T0]"+r"(T0), [T1]"+r"(T1), [T2]"+r"(T2)
++    : [A]"r"(A), [B]"r"(B)
++    : "xer"
++  );
++}
++
++// Fast Montgomery multiplication. The derivation of the algorithm is
++// in "A Cryptographic Library for the Motorola DSP56000,
++// Dusse and Kaliski, Proc. EUROCRYPT 90, pp. 230-237".
++static void
++montgomery_multiply(unsigned long a[], unsigned long b[], unsigned long n[],
++                    unsigned long m[], unsigned long inv, int len) {
++  unsigned long t0 = 0, t1 = 0, t2 = 0; // Triple-precision accumulator
++  int i;
++
++  assert(inv * n[0] == -1UL, "broken inverse in Montgomery multiply");
++
++  for (i = 0; i < len; i++) {
++    int j;
++    for (j = 0; j < i; j++) {
++      MACC(a[j], b[i-j], t0, t1, t2);
++      MACC(m[j], n[i-j], t0, t1, t2);
++    }
++    MACC(a[i], b[0], t0, t1, t2);
++    m[i] = t0 * inv;
++    MACC(m[i], n[0], t0, t1, t2);
++
++    assert(t0 == 0, "broken Montgomery multiply");
++
++    t0 = t1; t1 = t2; t2 = 0;
++  }
++
++  for (i = len; i < 2*len; i++) {
++    int j;
++    for (j = i-len+1; j < len; j++) {
++      MACC(a[j], b[i-j], t0, t1, t2);
++      MACC(m[j], n[i-j], t0, t1, t2);
++    }
++    m[i-len] = t0;
++    t0 = t1; t1 = t2; t2 = 0;
++  }
++
++  while (t0) {
++    t0 = sub(m, n, t0, len);
++  }
++}
++
++// Fast Montgomery squaring. This uses asymptotically 25% fewer
++// multiplies so it should be up to 25% faster than Montgomery
++// multiplication. However, its loop control is more complex and it
++// may actually run slower on some machines.
++static void
++montgomery_square(unsigned long a[], unsigned long n[],
++                  unsigned long m[], unsigned long inv, int len) {
++  unsigned long t0 = 0, t1 = 0, t2 = 0; // Triple-precision accumulator
++  int i;
++
++  assert(inv * n[0] == -1UL, "broken inverse in Montgomery multiply");
++
++  for (i = 0; i < len; i++) {
++    int j;
++    int end = (i+1)/2;
++    for (j = 0; j < end; j++) {
++      MACC2(a[j], a[i-j], t0, t1, t2);
++      MACC(m[j], n[i-j], t0, t1, t2);
++    }
++    if ((i & 1) == 0) {
++      MACC(a[j], a[j], t0, t1, t2);
++    }
++    for (; j < i; j++) {
++      MACC(m[j], n[i-j], t0, t1, t2);
++    }
++    m[i] = t0 * inv;
++    MACC(m[i], n[0], t0, t1, t2);
++
++    assert(t0 == 0, "broken Montgomery square");
++
++    t0 = t1; t1 = t2; t2 = 0;
++  }
++
++  for (i = len; i < 2*len; i++) {
++    int start = i-len+1;
++    int end = start + (len - start)/2;
++    int j;
++    for (j = start; j < end; j++) {
++      MACC2(a[j], a[i-j], t0, t1, t2);
++      MACC(m[j], n[i-j], t0, t1, t2);
++    }
++    if ((i & 1) == 0) {
++      MACC(a[j], a[j], t0, t1, t2);
++    }
++    for (; j < len; j++) {
++      MACC(m[j], n[i-j], t0, t1, t2);
++    }
++    m[i-len] = t0;
++    t0 = t1; t1 = t2; t2 = 0;
++  }
++
++  while (t0) {
++    t0 = sub(m, n, t0, len);
++  }
++}
++
++// The threshold at which squaring is advantageous was determined
++// experimentally on an i7-3930K (Ivy Bridge) CPU @ 3.5GHz.
++// Doesn't seem to be relevant for Power8 so we use the same value.
++#define MONTGOMERY_SQUARING_THRESHOLD 64
++
++// Copy len longwords from s to d, word-swapping as we go. The
++// destination array is reversed.
++static void reverse_words(unsigned long *s, unsigned long *d, int len) {
++  d += len;
++  while(len-- > 0) {
++    d--;
++    unsigned long s_val = *s;
++    // Swap words in a longword on little endian machines.
++#ifdef VM_LITTLE_ENDIAN
++     s_val = (s_val << 32) | (s_val >> 32);
++#endif
++    *d = s_val;
++    s++;
++  }
++}
++
++void SharedRuntime::montgomery_multiply(jint *a_ints, jint *b_ints, jint *n_ints,
++                                        jint len, jlong inv,
++                                        jint *m_ints) {
++  assert(len % 2 == 0, "array length in montgomery_multiply must be even");
++  int longwords = len/2;
++  assert(longwords > 0, "unsupported");
++
++  // Make very sure we don't use so much space that the stack might
++  // overflow. 512 jints corresponds to an 16384-bit integer and
++  // will use here a total of 8k bytes of stack space.
++  int total_allocation = longwords * sizeof (unsigned long) * 4;
++  guarantee(total_allocation <= 8192, "must be");
++  unsigned long *scratch = (unsigned long *)alloca(total_allocation);
++
++  // Local scratch arrays
++  unsigned long
++    *a = scratch + 0 * longwords,
++    *b = scratch + 1 * longwords,
++    *n = scratch + 2 * longwords,
++    *m = scratch + 3 * longwords;
++
++  reverse_words((unsigned long *)a_ints, a, longwords);
++  reverse_words((unsigned long *)b_ints, b, longwords);
++  reverse_words((unsigned long *)n_ints, n, longwords);
++
++  ::montgomery_multiply(a, b, n, m, (unsigned long)inv, longwords);
++
++  reverse_words(m, (unsigned long *)m_ints, longwords);
++}
++
++void SharedRuntime::montgomery_square(jint *a_ints, jint *n_ints,
++                                      jint len, jlong inv,
++                                      jint *m_ints) {
++  assert(len % 2 == 0, "array length in montgomery_square must be even");
++  int longwords = len/2;
++  assert(longwords > 0, "unsupported");
++
++  // Make very sure we don't use so much space that the stack might
++  // overflow. 512 jints corresponds to an 16384-bit integer and
++  // will use here a total of 6k bytes of stack space.
++  int total_allocation = longwords * sizeof (unsigned long) * 3;
++  guarantee(total_allocation <= 8192, "must be");
++  unsigned long *scratch = (unsigned long *)alloca(total_allocation);
++
++  // Local scratch arrays
++  unsigned long
++    *a = scratch + 0 * longwords,
++    *n = scratch + 1 * longwords,
++    *m = scratch + 2 * longwords;
++
++  reverse_words((unsigned long *)a_ints, a, longwords);
++  reverse_words((unsigned long *)n_ints, n, longwords);
++
++  if (len >= MONTGOMERY_SQUARING_THRESHOLD) {
++    ::montgomery_square(a, n, m, (unsigned long)inv, longwords);
++  } else {
++    ::montgomery_multiply(a, a, n, m, (unsigned long)inv, longwords);
++  }
++
++  reverse_words(m, (unsigned long *)m_ints, longwords);
++}
+diff -r 76540c2dc48d src/cpu/ppc/vm/stubGenerator_ppc.cpp
+--- openjdk/hotspot/src/cpu/ppc/vm/stubGenerator_ppc.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/cpu/ppc/vm/stubGenerator_ppc.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -2524,6 +2524,14 @@
+       StubRoutines::_aescrypt_decryptBlock = generate_aescrypt_decryptBlock();
+     }
+ 
++    if (UseMontgomeryMultiplyIntrinsic) {
++      StubRoutines::_montgomeryMultiply
++        = CAST_FROM_FN_PTR(address, SharedRuntime::montgomery_multiply);
++    }
++    if (UseMontgomerySquareIntrinsic) {
++      StubRoutines::_montgomerySquare
++        = CAST_FROM_FN_PTR(address, SharedRuntime::montgomery_square);
++    }
+   }
+ 
+  public:
+diff -r 76540c2dc48d src/cpu/ppc/vm/templateInterpreter_ppc.cpp
+--- openjdk/hotspot/src/cpu/ppc/vm/templateInterpreter_ppc.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/cpu/ppc/vm/templateInterpreter_ppc.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -265,7 +265,7 @@
+       __ cmpdi(CCR0, Rmdo, 0);
+       __ beq(CCR0, no_mdo);
+ 
+-      // Increment backedge counter in the MDO.
++      // Increment invocation counter in the MDO.
+       const int mdo_bc_offs = in_bytes(MethodData::backedge_counter_offset()) + in_bytes(InvocationCounter::counter_offset());
+       __ lwz(Rscratch2, mdo_bc_offs, Rmdo);
+       __ addi(Rscratch2, Rscratch2, increment);
+@@ -277,12 +277,12 @@
+     }
+ 
+     // Increment counter in MethodCounters*.
+-    const int mo_bc_offs = in_bytes(MethodCounters::backedge_counter_offset()) + in_bytes(InvocationCounter::counter_offset());
++    const int mo_ic_offs = in_bytes(MethodCounters::invocation_counter_offset()) + in_bytes(InvocationCounter::counter_offset());
+     __ bind(no_mdo);
+     __ get_method_counters(R19_method, R3_counters, done);
+-    __ lwz(Rscratch2, mo_bc_offs, R3_counters);
++    __ lwz(Rscratch2, mo_ic_offs, R3_counters);
+     __ addi(Rscratch2, Rscratch2, increment);
+-    __ stw(Rscratch2, mo_bc_offs, R3_counters);
++    __ stw(Rscratch2, mo_ic_offs, R3_counters);
+     __ load_const_optimized(Rscratch1, mask, R0);
+     __ and_(Rscratch1, Rscratch2, Rscratch1);
+     __ beq(CCR0, *overflow);
+diff -r 76540c2dc48d src/cpu/ppc/vm/vm_version_ppc.cpp
+--- openjdk/hotspot/src/cpu/ppc/vm/vm_version_ppc.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/cpu/ppc/vm/vm_version_ppc.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -201,6 +201,12 @@
+     FLAG_SET_DEFAULT(UseSHA512Intrinsics, false);
+   }
+ 
++  if (FLAG_IS_DEFAULT(UseMontgomeryMultiplyIntrinsic)) {
++    UseMontgomeryMultiplyIntrinsic = true;
++  }
++  if (FLAG_IS_DEFAULT(UseMontgomerySquareIntrinsic)) {
++    UseMontgomerySquareIntrinsic = true;
++  }
+ }
+ 
+ void VM_Version::print_features() {
+diff -r 76540c2dc48d src/os/linux/vm/os_linux.cpp
+--- openjdk/hotspot/src/os/linux/vm/os_linux.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/os/linux/vm/os_linux.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -2830,11 +2830,8 @@
+ extern "C" JNIEXPORT void numa_error(char *where) { }
+ extern "C" JNIEXPORT int fork1() { return fork(); }
+ 
+-
+-// If we are running with libnuma version > 2, then we should
+-// be trying to use symbols with versions 1.1
+-// If we are running with earlier version, which did not have symbol versions,
+-// we should use the base version.
++// Handle request to load libnuma symbol version 1.1 (API v1). If it fails
++// load symbol from base version instead.
+ void* os::Linux::libnuma_dlsym(void* handle, const char *name) {
+   void *f = dlvsym(handle, name, "libnuma_1.1");
+   if (f == NULL) {
+@@ -2843,6 +2840,12 @@
+   return f;
+ }
+ 
++// Handle request to load libnuma symbol version 1.2 (API v2) only.
++// Return NULL if the symbol is not defined in this particular version.
++void* os::Linux::libnuma_v2_dlsym(void* handle, const char* name) {
++  return dlvsym(handle, name, "libnuma_1.2");
++}
++
+ bool os::Linux::libnuma_init() {
+   // sched_getcpu() should be in libc.
+   set_sched_getcpu(CAST_TO_FN_PTR(sched_getcpu_func_t,
+@@ -2867,6 +2870,8 @@
+                                             libnuma_dlsym(handle, "numa_tonode_memory")));
+       set_numa_interleave_memory(CAST_TO_FN_PTR(numa_interleave_memory_func_t,
+                                                 libnuma_dlsym(handle, "numa_interleave_memory")));
++      set_numa_interleave_memory_v2(CAST_TO_FN_PTR(numa_interleave_memory_v2_func_t,
++                                                libnuma_v2_dlsym(handle, "numa_interleave_memory")));
+       set_numa_set_bind_policy(CAST_TO_FN_PTR(numa_set_bind_policy_func_t,
+                                               libnuma_dlsym(handle, "numa_set_bind_policy")));
+       set_numa_bitmask_isbitset(CAST_TO_FN_PTR(numa_bitmask_isbitset_func_t,
+@@ -2986,6 +2991,7 @@
+ os::Linux::numa_available_func_t os::Linux::_numa_available;
+ os::Linux::numa_tonode_memory_func_t os::Linux::_numa_tonode_memory;
+ os::Linux::numa_interleave_memory_func_t os::Linux::_numa_interleave_memory;
++os::Linux::numa_interleave_memory_v2_func_t os::Linux::_numa_interleave_memory_v2;
+ os::Linux::numa_set_bind_policy_func_t os::Linux::_numa_set_bind_policy;
+ os::Linux::numa_bitmask_isbitset_func_t os::Linux::_numa_bitmask_isbitset;
+ os::Linux::numa_distance_func_t os::Linux::_numa_distance;
+diff -r 76540c2dc48d src/os/linux/vm/os_linux.hpp
+--- openjdk/hotspot/src/os/linux/vm/os_linux.hpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/os/linux/vm/os_linux.hpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -190,6 +190,8 @@
+   static void libpthread_init();
+   static bool libnuma_init();
+   static void* libnuma_dlsym(void* handle, const char* name);
++  // libnuma v2 (libnuma_1.2) symbols
++  static void* libnuma_v2_dlsym(void* handle, const char* name);
+   // Minimum stack size a thread can be created with (allowing
+   // the VM to completely create the thread and enter user code)
+   static size_t min_stack_allowed;
+@@ -250,6 +252,8 @@
+   typedef int (*numa_available_func_t)(void);
+   typedef int (*numa_tonode_memory_func_t)(void *start, size_t size, int node);
+   typedef void (*numa_interleave_memory_func_t)(void *start, size_t size, unsigned long *nodemask);
++  typedef void (*numa_interleave_memory_v2_func_t)(void *start, size_t size, struct bitmask* mask);
++
+   typedef void (*numa_set_bind_policy_func_t)(int policy);
+   typedef int (*numa_bitmask_isbitset_func_t)(struct bitmask *bmp, unsigned int n);
+   typedef int (*numa_distance_func_t)(int node1, int node2);
+@@ -261,6 +265,7 @@
+   static numa_available_func_t _numa_available;
+   static numa_tonode_memory_func_t _numa_tonode_memory;
+   static numa_interleave_memory_func_t _numa_interleave_memory;
++  static numa_interleave_memory_v2_func_t _numa_interleave_memory_v2;
+   static numa_set_bind_policy_func_t _numa_set_bind_policy;
+   static numa_bitmask_isbitset_func_t _numa_bitmask_isbitset;
+   static numa_distance_func_t _numa_distance;
+@@ -275,6 +280,7 @@
+   static void set_numa_available(numa_available_func_t func) { _numa_available = func; }
+   static void set_numa_tonode_memory(numa_tonode_memory_func_t func) { _numa_tonode_memory = func; }
+   static void set_numa_interleave_memory(numa_interleave_memory_func_t func) { _numa_interleave_memory = func; }
++  static void set_numa_interleave_memory_v2(numa_interleave_memory_v2_func_t func) { _numa_interleave_memory_v2 = func; }
+   static void set_numa_set_bind_policy(numa_set_bind_policy_func_t func) { _numa_set_bind_policy = func; }
+   static void set_numa_bitmask_isbitset(numa_bitmask_isbitset_func_t func) { _numa_bitmask_isbitset = func; }
+   static void set_numa_distance(numa_distance_func_t func) { _numa_distance = func; }
+@@ -296,7 +302,10 @@
+     return _numa_tonode_memory != NULL ? _numa_tonode_memory(start, size, node) : -1;
+   }
+   static void numa_interleave_memory(void *start, size_t size) {
+-    if (_numa_interleave_memory != NULL && _numa_all_nodes != NULL) {
++    // Use v2 api if available
++    if (_numa_interleave_memory_v2 != NULL && _numa_all_nodes_ptr != NULL) {
++      _numa_interleave_memory_v2(start, size, _numa_all_nodes_ptr);
++    } else if (_numa_interleave_memory != NULL && _numa_all_nodes != NULL) {
+       _numa_interleave_memory(start, size, _numa_all_nodes);
+     }
+   }
+diff -r 76540c2dc48d src/os/windows/vm/version.rc
+--- openjdk/hotspot/src/os/windows/vm/version.rc	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/os/windows/vm/version.rc	Fri Mar 02 20:53:52 2018 -0300
+@@ -36,7 +36,7 @@
+ //
+ 
+ VS_VERSION_INFO VERSIONINFO
+- FILEVERSION    HS_VER
++ FILEVERSION    JDK_VER
+  PRODUCTVERSION JDK_VER
+  FILEFLAGSMASK 0x3fL
+ #ifdef _DEBUG
+@@ -56,7 +56,7 @@
+         BEGIN
+             VALUE "CompanyName",      XSTR(HS_COMPANY)       "\0"
+             VALUE "FileDescription",  XSTR(HS_FILEDESC)      "\0"
+-            VALUE "FileVersion",      XSTR(HS_DOTVER)        "\0"
++            VALUE "FileVersion",      XSTR(JDK_DOTVER)        "\0"
+             VALUE "Full Version",     XSTR(HS_BUILD_ID)      "\0"
+ 	    VALUE "InternalName",     XSTR(HS_INTERNAL_NAME) "\0"
+             VALUE "LegalCopyright",   XSTR(HS_COPYRIGHT)     "\0"
+diff -r 76540c2dc48d src/os_cpu/solaris_sparc/vm/vm_version_solaris_sparc.cpp
+--- openjdk/hotspot/src/os_cpu/solaris_sparc/vm/vm_version_solaris_sparc.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/os_cpu/solaris_sparc/vm/vm_version_solaris_sparc.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -442,7 +442,7 @@
+   // is available to us as well
+   Sysinfo cpu_info(SI_CPUBRAND);
+   bool use_solaris_12_api = cpu_info.valid();
+-  const char* impl;
++  const char* impl = "unknown";
+   int impl_m = 0;
+   if (use_solaris_12_api) {
+     impl = cpu_info.value();
+@@ -477,7 +477,7 @@
+       kstat_close(kc);
+     }
+   }
+-  assert(impl_m != 0, err_msg("Unknown CPU implementation %s", impl));
++  assert(impl_m != 0, err_msg("Unrecognized CPU implementation %s", impl));
+   features |= impl_m;
+ 
+   bool is_sun4v = (features & sun4v_m) != 0;
+diff -r 76540c2dc48d src/share/vm/c1/c1_GraphBuilder.cpp
+--- openjdk/hotspot/src/share/vm/c1/c1_GraphBuilder.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/c1/c1_GraphBuilder.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1530,7 +1530,7 @@
+         ciMethod* caller = state()->scope()->method();
+         ciMethodData* md = caller->method_data_or_null();
+         ciProfileData* data = md->bci_to_data(invoke_bci);
+-        if (data->is_CallTypeData() || data->is_VirtualCallTypeData()) {
++        if (data != NULL && (data->is_CallTypeData() || data->is_VirtualCallTypeData())) {
+           bool has_return = data->is_CallTypeData() ? ((ciCallTypeData*)data)->has_return() : ((ciVirtualCallTypeData*)data)->has_return();
+           // May not be true in case of an inlined call through a method handle intrinsic.
+           if (has_return) {
+@@ -1747,7 +1747,7 @@
+   start = has_receiver ? 1 : 0;
+   if (profile_arguments()) {
+     ciProfileData* data = method()->method_data()->bci_to_data(bci());
+-    if (data->is_CallTypeData() || data->is_VirtualCallTypeData()) {
++    if (data != NULL && (data->is_CallTypeData() || data->is_VirtualCallTypeData())) {
+       n = data->is_CallTypeData() ? data->as_CallTypeData()->number_of_arguments() : data->as_VirtualCallTypeData()->number_of_arguments();
+     }
+   }
+@@ -3313,7 +3313,9 @@
+   // for osr compile, bailout if some requirements are not fulfilled
+   if (osr_bci != -1) {
+     BlockBegin* osr_block = blm.bci2block()->at(osr_bci);
+-    assert(osr_block->is_set(BlockBegin::was_visited_flag),"osr entry must have been visited for osr compile");
++    if (!osr_block->is_set(BlockBegin::was_visited_flag)) {
++      BAILOUT("osr entry must have been visited for osr compile");
++    }
+ 
+     // check if osr entry point has empty stack - we cannot handle non-empty stacks at osr entry points
+     if (!osr_block->state()->stack_is_empty()) {
+@@ -4465,7 +4467,7 @@
+   }
+   ciMethodData* md = m->method_data_or_null();
+   ciProfileData* data = md->bci_to_data(invoke_bci);
+-  if (data->is_CallTypeData() || data->is_VirtualCallTypeData()) {
++  if (data != NULL && (data->is_CallTypeData() || data->is_VirtualCallTypeData())) {
+     append(new ProfileReturnType(m , invoke_bci, callee, ret));
+   }
+ }
+diff -r 76540c2dc48d src/share/vm/c1/c1_Instruction.hpp
+--- openjdk/hotspot/src/share/vm/c1/c1_Instruction.hpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/c1/c1_Instruction.hpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1568,7 +1568,7 @@
+     set_needs_null_check(has_receiver);
+ 
+     // some intrinsics can't trap, so don't force them to be pinned
+-    if (!can_trap()) {
++    if (!can_trap() && !vmIntrinsics::should_be_pinned(_id)) {
+       unpin(PinStateSplitConstructor);
+     }
+   }
+diff -r 76540c2dc48d src/share/vm/c1/c1_LIRGenerator.cpp
+--- openjdk/hotspot/src/share/vm/c1/c1_LIRGenerator.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/c1/c1_LIRGenerator.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -3185,50 +3185,52 @@
+     int bci = x->bci_of_invoke();
+     ciMethodData* md = x->method()->method_data_or_null();
+     ciProfileData* data = md->bci_to_data(bci);
+-    if ((data->is_CallTypeData() && data->as_CallTypeData()->has_arguments()) ||
+-        (data->is_VirtualCallTypeData() && data->as_VirtualCallTypeData()->has_arguments())) {
+-      ByteSize extra = data->is_CallTypeData() ? CallTypeData::args_data_offset() : VirtualCallTypeData::args_data_offset();
+-      int base_offset = md->byte_offset_of_slot(data, extra);
+-      LIR_Opr mdp = LIR_OprFact::illegalOpr;
+-      ciTypeStackSlotEntries* args = data->is_CallTypeData() ? ((ciCallTypeData*)data)->args() : ((ciVirtualCallTypeData*)data)->args();
+-
+-      Bytecodes::Code bc = x->method()->java_code_at_bci(bci);
+-      int start = 0;
+-      int stop = data->is_CallTypeData() ? ((ciCallTypeData*)data)->number_of_arguments() : ((ciVirtualCallTypeData*)data)->number_of_arguments();
+-      if (x->callee()->is_loaded() && x->callee()->is_static() && Bytecodes::has_receiver(bc)) {
+-        // first argument is not profiled at call (method handle invoke)
+-        assert(x->method()->raw_code_at_bci(bci) == Bytecodes::_invokehandle, "invokehandle expected");
+-        start = 1;
++    if (data != NULL) {
++      if ((data->is_CallTypeData() && data->as_CallTypeData()->has_arguments()) ||
++          (data->is_VirtualCallTypeData() && data->as_VirtualCallTypeData()->has_arguments())) {
++        ByteSize extra = data->is_CallTypeData() ? CallTypeData::args_data_offset() : VirtualCallTypeData::args_data_offset();
++        int base_offset = md->byte_offset_of_slot(data, extra);
++        LIR_Opr mdp = LIR_OprFact::illegalOpr;
++        ciTypeStackSlotEntries* args = data->is_CallTypeData() ? ((ciCallTypeData*)data)->args() : ((ciVirtualCallTypeData*)data)->args();
++
++        Bytecodes::Code bc = x->method()->java_code_at_bci(bci);
++        int start = 0;
++        int stop = data->is_CallTypeData() ? ((ciCallTypeData*)data)->number_of_arguments() : ((ciVirtualCallTypeData*)data)->number_of_arguments();
++        if (x->callee()->is_loaded() && x->callee()->is_static() && Bytecodes::has_receiver(bc)) {
++          // first argument is not profiled at call (method handle invoke)
++          assert(x->method()->raw_code_at_bci(bci) == Bytecodes::_invokehandle, "invokehandle expected");
++          start = 1;
++        }
++        ciSignature* callee_signature = x->callee()->signature();
++        // method handle call to virtual method
++        bool has_receiver = x->callee()->is_loaded() && !x->callee()->is_static() && !Bytecodes::has_receiver(bc);
++        ciSignatureStream callee_signature_stream(callee_signature, has_receiver ? x->callee()->holder() : NULL);
++
++        bool ignored_will_link;
++        ciSignature* signature_at_call = NULL;
++        x->method()->get_method_at_bci(bci, ignored_will_link, &signature_at_call);
++        ciSignatureStream signature_at_call_stream(signature_at_call);
++
++        // if called through method handle invoke, some arguments may have been popped
++        for (int i = 0; i < stop && i+start < x->nb_profiled_args(); i++) {
++          int off = in_bytes(TypeEntriesAtCall::argument_type_offset(i)) - in_bytes(TypeEntriesAtCall::args_data_offset());
++          ciKlass* exact = profile_type(md, base_offset, off,
++              args->type(i), x->profiled_arg_at(i+start), mdp,
++              !x->arg_needs_null_check(i+start),
++              signature_at_call_stream.next_klass(), callee_signature_stream.next_klass());
++          if (exact != NULL) {
++            md->set_argument_type(bci, i, exact);
++          }
++        }
++      } else {
++#ifdef ASSERT
++        Bytecodes::Code code = x->method()->raw_code_at_bci(x->bci_of_invoke());
++        int n = x->nb_profiled_args();
++        assert(MethodData::profile_parameters() && (MethodData::profile_arguments_jsr292_only() ||
++            (x->inlined() && ((code == Bytecodes::_invokedynamic && n <= 1) || (code == Bytecodes::_invokehandle && n <= 2)))),
++            "only at JSR292 bytecodes");
++#endif
+       }
+-      ciSignature* callee_signature = x->callee()->signature();
+-      // method handle call to virtual method
+-      bool has_receiver = x->callee()->is_loaded() && !x->callee()->is_static() && !Bytecodes::has_receiver(bc);
+-      ciSignatureStream callee_signature_stream(callee_signature, has_receiver ? x->callee()->holder() : NULL);
+-
+-      bool ignored_will_link;
+-      ciSignature* signature_at_call = NULL;
+-      x->method()->get_method_at_bci(bci, ignored_will_link, &signature_at_call);
+-      ciSignatureStream signature_at_call_stream(signature_at_call);
+-
+-      // if called through method handle invoke, some arguments may have been popped
+-      for (int i = 0; i < stop && i+start < x->nb_profiled_args(); i++) {
+-        int off = in_bytes(TypeEntriesAtCall::argument_type_offset(i)) - in_bytes(TypeEntriesAtCall::args_data_offset());
+-        ciKlass* exact = profile_type(md, base_offset, off,
+-                                      args->type(i), x->profiled_arg_at(i+start), mdp,
+-                                      !x->arg_needs_null_check(i+start),
+-                                      signature_at_call_stream.next_klass(), callee_signature_stream.next_klass());
+-        if (exact != NULL) {
+-          md->set_argument_type(bci, i, exact);
+-        }
+-      }
+-    } else {
+-#ifdef ASSERT
+-      Bytecodes::Code code = x->method()->raw_code_at_bci(x->bci_of_invoke());
+-      int n = x->nb_profiled_args();
+-      assert(MethodData::profile_parameters() && (MethodData::profile_arguments_jsr292_only() ||
+-                                                  (x->inlined() && ((code == Bytecodes::_invokedynamic && n <= 1) || (code == Bytecodes::_invokehandle && n <= 2)))),
+-             "only at JSR292 bytecodes");
+-#endif
+     }
+   }
+ }
+@@ -3319,24 +3321,26 @@
+   int bci = x->bci_of_invoke();
+   ciMethodData* md = x->method()->method_data_or_null();
+   ciProfileData* data = md->bci_to_data(bci);
+-  assert(data->is_CallTypeData() || data->is_VirtualCallTypeData(), "wrong profile data type");
+-  ciReturnTypeEntry* ret = data->is_CallTypeData() ? ((ciCallTypeData*)data)->ret() : ((ciVirtualCallTypeData*)data)->ret();
+-  LIR_Opr mdp = LIR_OprFact::illegalOpr;
+-
+-  bool ignored_will_link;
+-  ciSignature* signature_at_call = NULL;
+-  x->method()->get_method_at_bci(bci, ignored_will_link, &signature_at_call);
+-
+-  // The offset within the MDO of the entry to update may be too large
+-  // to be used in load/store instructions on some platforms. So have
+-  // profile_type() compute the address of the profile in a register.
+-  ciKlass* exact = profile_type(md, md->byte_offset_of_slot(data, ret->type_offset()), 0,
+-                                ret->type(), x->ret(), mdp,
+-                                !x->needs_null_check(),
+-                                signature_at_call->return_type()->as_klass(),
+-                                x->callee()->signature()->return_type()->as_klass());
+-  if (exact != NULL) {
+-    md->set_return_type(bci, exact);
++  if (data != NULL) {
++    assert(data->is_CallTypeData() || data->is_VirtualCallTypeData(), "wrong profile data type");
++    ciReturnTypeEntry* ret = data->is_CallTypeData() ? ((ciCallTypeData*)data)->ret() : ((ciVirtualCallTypeData*)data)->ret();
++    LIR_Opr mdp = LIR_OprFact::illegalOpr;
++
++    bool ignored_will_link;
++    ciSignature* signature_at_call = NULL;
++    x->method()->get_method_at_bci(bci, ignored_will_link, &signature_at_call);
++
++    // The offset within the MDO of the entry to update may be too large
++    // to be used in load/store instructions on some platforms. So have
++    // profile_type() compute the address of the profile in a register.
++    ciKlass* exact = profile_type(md, md->byte_offset_of_slot(data, ret->type_offset()), 0,
++        ret->type(), x->ret(), mdp,
++        !x->needs_null_check(),
++        signature_at_call->return_type()->as_klass(),
++        x->callee()->signature()->return_type()->as_klass());
++    if (exact != NULL) {
++      md->set_return_type(bci, exact);
++    }
+   }
+ }
+ 
+diff -r 76540c2dc48d src/share/vm/ci/ciMethodData.cpp
+--- openjdk/hotspot/src/share/vm/ci/ciMethodData.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/ci/ciMethodData.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -391,11 +391,13 @@
+   MethodData* mdo = get_MethodData();
+   if (mdo != NULL) {
+     ProfileData* data = mdo->bci_to_data(bci);
+-    if (data->is_CallTypeData()) {
+-      data->as_CallTypeData()->set_argument_type(i, k->get_Klass());
+-    } else {
+-      assert(data->is_VirtualCallTypeData(), "no arguments!");
+-      data->as_VirtualCallTypeData()->set_argument_type(i, k->get_Klass());
++    if (data != NULL) {
++      if (data->is_CallTypeData()) {
++        data->as_CallTypeData()->set_argument_type(i, k->get_Klass());
++      } else {
++        assert(data->is_VirtualCallTypeData(), "no arguments!");
++        data->as_VirtualCallTypeData()->set_argument_type(i, k->get_Klass());
++      }
+     }
+   }
+ }
+@@ -413,11 +415,13 @@
+   MethodData* mdo = get_MethodData();
+   if (mdo != NULL) {
+     ProfileData* data = mdo->bci_to_data(bci);
+-    if (data->is_CallTypeData()) {
+-      data->as_CallTypeData()->set_return_type(k->get_Klass());
+-    } else {
+-      assert(data->is_VirtualCallTypeData(), "no arguments!");
+-      data->as_VirtualCallTypeData()->set_return_type(k->get_Klass());
++    if (data != NULL) {
++      if (data->is_CallTypeData()) {
++        data->as_CallTypeData()->set_return_type(k->get_Klass());
++      } else {
++        assert(data->is_VirtualCallTypeData(), "no arguments!");
++        data->as_VirtualCallTypeData()->set_return_type(k->get_Klass());
++      }
+     }
+   }
+ }
+diff -r 76540c2dc48d src/share/vm/classfile/vmSymbols.cpp
+--- openjdk/hotspot/src/share/vm/classfile/vmSymbols.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/classfile/vmSymbols.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -324,6 +324,20 @@
+   return vmIntrinsics::_none;
+ }
+ 
++// Some intrinsics produce different results if they are not pinned
++bool vmIntrinsics::should_be_pinned(vmIntrinsics::ID id) {
++  assert(id != vmIntrinsics::_none, "must be a VM intrinsic");
++  switch(id) {
++#ifdef TRACE_HAVE_INTRINSICS
++  case vmIntrinsics::_counterTime:
++#endif
++  case vmIntrinsics::_currentTimeMillis:
++  case vmIntrinsics::_nanoTime:
++    return true;
++  default:
++    return false;
++  }
++}
+ 
+ #define VM_INTRINSIC_INITIALIZE(id, klass, name, sig, flags) #id "\0"
+ static const char* vm_intrinsic_name_bodies =
+diff -r 76540c2dc48d src/share/vm/classfile/vmSymbols.hpp
+--- openjdk/hotspot/src/share/vm/classfile/vmSymbols.hpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/classfile/vmSymbols.hpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1301,6 +1301,8 @@
+ 
+   // Raw conversion:
+   static ID for_raw_conversion(BasicType src, BasicType dest);
++
++  static bool should_be_pinned(vmIntrinsics::ID id);
+ };
+ 
+ #endif // SHARE_VM_CLASSFILE_VMSYMBOLS_HPP
+diff -r 76540c2dc48d src/share/vm/compiler/oopMap.cpp
+--- openjdk/hotspot/src/share/vm/compiler/oopMap.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/compiler/oopMap.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1998, 2014, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -389,17 +389,16 @@
+         omv = oms.current();
+         oop* loc = fr->oopmapreg_to_location(omv.reg(),reg_map);
+         if ( loc != NULL ) {
++          oop *derived_loc = loc;
+           oop *base_loc    = fr->oopmapreg_to_location(omv.content_reg(), reg_map);
+-          oop *derived_loc = loc;
+-          oop val = *base_loc;
+-          if (val == (oop)NULL || Universe::is_narrow_oop_base(val)) {
+-            // Ignore NULL oops and decoded NULL narrow oops which
+-            // equal to Universe::narrow_oop_base when a narrow oop
+-            // implicit null check is used in compiled code.
+-            // The narrow_oop_base could be NULL or be the address
+-            // of the page below heap depending on compressed oops mode.
+-          } else
++          // Ignore NULL oops and decoded NULL narrow oops which
++          // equal to Universe::narrow_oop_base when a narrow oop
++          // implicit null check is used in compiled code.
++          // The narrow_oop_base could be NULL or be the address
++          // of the page below heap depending on compressed oops mode.
++          if (base_loc != NULL && *base_loc != (oop)NULL && !Universe::is_narrow_oop_base(*base_loc)) {
+             derived_oop_fn(base_loc, derived_loc);
++          }
+         }
+         oms.next();
+       }  while (!oms.is_done());
+diff -r 76540c2dc48d src/share/vm/interpreter/interpreterRuntime.cpp
+--- openjdk/hotspot/src/share/vm/interpreter/interpreterRuntime.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/interpreter/interpreterRuntime.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -985,6 +985,7 @@
+   // ProfileData is essentially a wrapper around a derived oop, so we
+   // need to take the lock before making any ProfileData structures.
+   ProfileData* data = h_mdo->data_at(h_mdo->dp_to_di(fr.interpreter_frame_mdp()));
++  guarantee(data != NULL, "profile data must be valid");
+   RetData* rdata = data->as_RetData();
+   address new_mdp = rdata->fixup_ret(return_bci, h_mdo);
+   fr.interpreter_frame_set_mdp(new_mdp);
+diff -r 76540c2dc48d src/share/vm/memory/metaspace.cpp
+--- openjdk/hotspot/src/share/vm/memory/metaspace.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/memory/metaspace.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2011, 2014, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 2011, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -3175,6 +3175,24 @@
+ 
+   CompressedClassSpaceSize = align_size_down_bounded(CompressedClassSpaceSize, _reserve_alignment);
+   set_compressed_class_space_size(CompressedClassSpaceSize);
++
++  // Initial virtual space size will be calculated at global_initialize()
++  uintx min_metaspace_sz =
++      VIRTUALSPACEMULTIPLIER * InitialBootClassLoaderMetaspaceSize;
++  if (UseCompressedClassPointers) {
++    if ((min_metaspace_sz + CompressedClassSpaceSize) >  MaxMetaspaceSize) {
++      if (min_metaspace_sz >= MaxMetaspaceSize) {
++        vm_exit_during_initialization("MaxMetaspaceSize is too small.");
++      } else {
++        FLAG_SET_ERGO(uintx, CompressedClassSpaceSize,
++                      MaxMetaspaceSize - min_metaspace_sz);
++      }
++    }
++  } else if (min_metaspace_sz >= MaxMetaspaceSize) {
++    FLAG_SET_ERGO(uintx, InitialBootClassLoaderMetaspaceSize,
++                  min_metaspace_sz);
++  }
++
+ }
+ 
+ void Metaspace::global_initialize() {
+diff -r 76540c2dc48d src/share/vm/opto/ifnode.cpp
+--- openjdk/hotspot/src/share/vm/opto/ifnode.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/opto/ifnode.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -234,6 +234,13 @@
+       predicate_proj = proj;
+     }
+   }
++
++  // If all the defs of the phi are the same constant, we already have the desired end state.
++  // Skip the split that would create empty phi and region nodes.
++  if((r->req() - req_c) == 1) {
++    return NULL;
++  }
++
+   Node* predicate_c = NULL;
+   Node* predicate_x = NULL;
+   bool counted_loop = r->is_CountedLoop();
+diff -r 76540c2dc48d src/share/vm/opto/library_call.cpp
+--- openjdk/hotspot/src/share/vm/opto/library_call.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/opto/library_call.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -6068,11 +6068,21 @@
+     Node* n_start = array_element_address(n, intcon(0), n_elem);
+     Node* m_start = array_element_address(m, intcon(0), m_elem);
+ 
+-    Node* call = make_runtime_call(RC_LEAF,
+-                                   OptoRuntime::montgomeryMultiply_Type(),
+-                                   stubAddr, stubName, TypePtr::BOTTOM,
+-                                   a_start, b_start, n_start, len, inv, top(),
+-                                   m_start);
++    Node* call = NULL;
++    if (CCallingConventionRequiresIntsAsLongs) {
++      Node* len_I2L = ConvI2L(len);
++      call = make_runtime_call(RC_LEAF,
++                               OptoRuntime::montgomeryMultiply_Type(),
++                               stubAddr, stubName, TypePtr::BOTTOM,
++                               a_start, b_start, n_start, len_I2L XTOP, inv,
++                               top(), m_start);
++    } else {
++      call = make_runtime_call(RC_LEAF,
++                               OptoRuntime::montgomeryMultiply_Type(),
++                               stubAddr, stubName, TypePtr::BOTTOM,
++                               a_start, b_start, n_start, len, inv, top(),
++                               m_start);
++    }
+     set_result(m);
+   }
+ 
+@@ -6122,11 +6132,22 @@
+     Node* n_start = array_element_address(n, intcon(0), n_elem);
+     Node* m_start = array_element_address(m, intcon(0), m_elem);
+ 
+-    Node* call = make_runtime_call(RC_LEAF,
+-                                   OptoRuntime::montgomerySquare_Type(),
+-                                   stubAddr, stubName, TypePtr::BOTTOM,
+-                                   a_start, n_start, len, inv, top(),
+-                                   m_start);
++    Node* call = NULL;
++    if (CCallingConventionRequiresIntsAsLongs) {
++      Node* len_I2L = ConvI2L(len);
++      call = make_runtime_call(RC_LEAF,
++                               OptoRuntime::montgomerySquare_Type(),
++                               stubAddr, stubName, TypePtr::BOTTOM,
++                               a_start, n_start, len_I2L XTOP, inv, top(),
++                               m_start);
++    } else {
++      call = make_runtime_call(RC_LEAF,
++                               OptoRuntime::montgomerySquare_Type(),
++                               stubAddr, stubName, TypePtr::BOTTOM,
++                               a_start, n_start, len, inv, top(),
++                               m_start);
++    }
++
+     set_result(m);
+   }
+ 
+diff -r 76540c2dc48d src/share/vm/opto/loopnode.cpp
+--- openjdk/hotspot/src/share/vm/opto/loopnode.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/opto/loopnode.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1998, 2014, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -1773,6 +1773,12 @@
+     Node *init2 = phi2->in( LoopNode::EntryControl );
+     int stride_con2 = incr2->in(2)->get_int();
+ 
++    // The ratio of the two strides cannot be represented as an int
++    // if stride_con2 is min_int and stride_con is -1.
++    if (stride_con2 == min_jint && stride_con == -1) {
++      continue;
++    }
++
+     // The general case here gets a little tricky.  We want to find the
+     // GCD of all possible parallel IV's and make a new IV using this
+     // GCD for the loop.  Then all possible IVs are simple multiples of
+diff -r 76540c2dc48d src/share/vm/opto/loopnode.hpp
+--- openjdk/hotspot/src/share/vm/opto/loopnode.hpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/opto/loopnode.hpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1998, 2015, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -257,19 +257,29 @@
+   Node *incr() const                { Node *tmp = cmp_node(); return (tmp && tmp->req()==3) ? tmp->in(1) : NULL; }
+   Node *limit() const               { Node *tmp = cmp_node(); return (tmp && tmp->req()==3) ? tmp->in(2) : NULL; }
+   Node *stride() const              { Node *tmp = incr    (); return (tmp && tmp->req()==3) ? tmp->in(2) : NULL; }
+-  Node *phi() const                 { Node *tmp = incr    (); return (tmp && tmp->req()==3) ? tmp->in(1) : NULL; }
+   Node *init_trip() const           { Node *tmp = phi     (); return (tmp && tmp->req()==3) ? tmp->in(1) : NULL; }
+   int stride_con() const;
+   bool stride_is_con() const        { Node *tmp = stride  (); return (tmp != NULL && tmp->is_Con()); }
+   BoolTest::mask test_trip() const  { return in(TestValue)->as_Bool()->_test._test; }
++  PhiNode *phi() const {
++    Node *tmp = incr();
++    if (tmp && tmp->req() == 3) {
++      Node* phi = tmp->in(1);
++      if (phi->is_Phi()) {
++        return phi->as_Phi();
++      }
++    }
++    return NULL;
++  }
+   CountedLoopNode *loopnode() const {
+     // The CountedLoopNode that goes with this CountedLoopEndNode may
+     // have been optimized out by the IGVN so be cautious with the
+     // pattern matching on the graph
+-    if (phi() == NULL) {
++    PhiNode* iv_phi = phi();
++    if (iv_phi == NULL) {
+       return NULL;
+     }
+-    Node *ln = phi()->in(0);
++    Node *ln = iv_phi->in(0);
+     if (ln->is_CountedLoop() && ln->as_CountedLoop()->loopexit() == this) {
+       return (CountedLoopNode*)ln;
+     }
+diff -r 76540c2dc48d src/share/vm/opto/memnode.cpp
+--- openjdk/hotspot/src/share/vm/opto/memnode.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/opto/memnode.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -55,6 +55,15 @@
+   return calculate_adr_type(adr->bottom_type(), cross_check);
+ }
+ 
++bool MemNode::check_if_adr_maybe_raw(Node* adr) {
++  if (adr != NULL) {
++    if (adr->bottom_type()->base() == Type::RawPtr || adr->bottom_type()->base() == Type::AnyPtr) {
++      return true;
++    }
++  }
++  return false;
++}
++
+ #ifndef PRODUCT
+ void MemNode::dump_spec(outputStream *st) const {
+   if (in(Address) == NULL)  return; // node is dead
+@@ -503,6 +512,7 @@
+   if (offset == Type::OffsetBot)
+     return NULL;            // cannot unalias unless there are precise offsets
+ 
++  const bool adr_maybe_raw = check_if_adr_maybe_raw(adr);
+   const TypeOopPtr *addr_t = adr->bottom_type()->isa_oopptr();
+ 
+   intptr_t size_in_bytes = memory_size();
+@@ -519,6 +529,13 @@
+       Node* st_base = AddPNode::Ideal_base_and_offset(st_adr, phase, st_offset);
+       if (st_base == NULL)
+         break;              // inscrutable pointer
++
++      // For raw accesses it's not enough to prove that constant offsets don't intersect.
++      // We need the bases to be the equal in order for the offset check to make sense.
++      if ((adr_maybe_raw || check_if_adr_maybe_raw(st_adr)) && st_base != base) {
++        break;
++      }
++
+       if (st_offset != offset && st_offset != Type::OffsetBot) {
+         const int MAX_STORE = BytesPerLong;
+         if (st_offset >= offset + size_in_bytes ||
+diff -r 76540c2dc48d src/share/vm/opto/memnode.hpp
+--- openjdk/hotspot/src/share/vm/opto/memnode.hpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/opto/memnode.hpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -75,6 +75,8 @@
+     debug_only(_adr_type=at; adr_type();)
+   }
+ 
++  static bool check_if_adr_maybe_raw(Node* adr);
++
+ public:
+   // Helpers for the optimizer.  Documented in memnode.cpp.
+   static bool detect_ptr_independence(Node* p1, AllocateNode* a1,
+diff -r 76540c2dc48d src/share/vm/opto/parse2.cpp
+--- openjdk/hotspot/src/share/vm/opto/parse2.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/opto/parse2.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -812,6 +812,9 @@
+     ciMethodData* methodData = method()->method_data();
+     if (!methodData->is_mature())  return PROB_UNKNOWN;
+     ciProfileData* data = methodData->bci_to_data(bci());
++    if (data == NULL) {
++      return PROB_UNKNOWN;
++    }
+     if (!data->is_JumpData())  return PROB_UNKNOWN;
+ 
+     // get taken and not taken values
+@@ -903,8 +906,8 @@
+         // of the OSR-ed method, and we want to deopt to gather more stats.
+         // If you have ANY counts, then this loop is simply 'cold' relative
+         // to the OSR loop.
+-        if (data->as_BranchData()->taken() +
+-            data->as_BranchData()->not_taken() == 0 ) {
++        if (data == NULL ||
++            (data->as_BranchData()->taken() +  data->as_BranchData()->not_taken() == 0)) {
+           // This is the only way to return PROB_UNKNOWN:
+           return PROB_UNKNOWN;
+         }
+diff -r 76540c2dc48d src/share/vm/opto/phaseX.cpp
+--- openjdk/hotspot/src/share/vm/opto/phaseX.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/opto/phaseX.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -1416,6 +1416,27 @@
+   }
+ }
+ 
++// Return counted loop Phi if as a counted loop exit condition, cmp
++// compares the the induction variable with n
++static PhiNode* countedloop_phi_from_cmp(CmpINode* cmp, Node* n) {
++  for (DUIterator_Fast imax, i = cmp->fast_outs(imax); i < imax; i++) {
++    Node* bol = cmp->fast_out(i);
++    for (DUIterator_Fast i2max, i2 = bol->fast_outs(i2max); i2 < i2max; i2++) {
++      Node* iff = bol->fast_out(i2);
++      if (iff->is_CountedLoopEnd()) {
++        CountedLoopEndNode* cle = iff->as_CountedLoopEnd();
++        if (cle->limit() == n) {
++          PhiNode* phi = cle->phi();
++          if (phi != NULL) {
++            return phi;
++          }
++        }
++      }
++    }
++  }
++  return NULL;
++}
++
+ void PhaseIterGVN::add_users_to_worklist( Node *n ) {
+   add_users_to_worklist0(n);
+ 
+@@ -1445,18 +1466,7 @@
+         Node* bol = use->raw_out(0);
+         if (bol->outcnt() > 0) {
+           Node* iff = bol->raw_out(0);
+-          if (use_op == Op_CmpI &&
+-              iff->is_CountedLoopEnd()) {
+-            CountedLoopEndNode* cle = iff->as_CountedLoopEnd();
+-            if (cle->limit() == n && cle->phi() != NULL) {
+-              // If an opaque node feeds into the limit condition of a
+-              // CountedLoop, we need to process the Phi node for the
+-              // induction variable when the opaque node is removed:
+-              // the range of values taken by the Phi is now known and
+-              // so its type is also known.
+-              _worklist.push(cle->phi());
+-            }
+-          } else if (iff->outcnt() == 2) {
++          if (iff->outcnt() == 2) {
+             // Look for the 'is_x2logic' pattern: "x ? : 0 : 1" and put the
+             // phi merging either 0 or 1 onto the worklist
+             Node* ifproj0 = iff->raw_out(0);
+@@ -1471,6 +1481,15 @@
+         }
+       }
+       if (use_op == Op_CmpI) {
++        Node* phi = countedloop_phi_from_cmp((CmpINode*)use, n);
++        if (phi != NULL) {
++          // If an opaque node feeds into the limit condition of a
++          // CountedLoop, we need to process the Phi node for the
++          // induction variable when the opaque node is removed:
++          // the range of values taken by the Phi is now known and
++          // so its type is also known.
++          _worklist.push(phi);
++        }
+         Node* in1 = use->in(1);
+         for (uint i = 0; i < in1->outcnt(); i++) {
+           if (in1->raw_out(i)->Opcode() == Op_CastII) {
+@@ -1659,6 +1678,15 @@
+             }
+           }
+         }
++        // If n is used in a counted loop exit condition then the type
++        // of the counted loop's Phi depends on the type of n. See
++        // PhiNode::Value().
++        if (m_op == Op_CmpI) {
++          PhiNode* phi = countedloop_phi_from_cmp((CmpINode*)m, n);
++          if (phi != NULL) {
++            worklist.push(phi);
++          }
++        }
+       }
+     }
+   }
+diff -r 76540c2dc48d src/share/vm/opto/phaseX.hpp
+--- openjdk/hotspot/src/share/vm/opto/phaseX.hpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/opto/phaseX.hpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -417,7 +417,7 @@
+ // Phase for iteratively performing local, pessimistic GVN-style optimizations.
+ // and ideal transformations on the graph.
+ class PhaseIterGVN : public PhaseGVN {
+- private:
++private:
+   bool _delay_transform;  // When true simply register the node when calling transform
+                           // instead of actually optimizing it
+ 
+diff -r 76540c2dc48d src/share/vm/opto/runtime.cpp
+--- openjdk/hotspot/src/share/vm/opto/runtime.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/opto/runtime.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1005,12 +1005,20 @@
+   // create input type (domain)
+   int num_args      = 7;
+   int argcnt = num_args;
++  if (CCallingConventionRequiresIntsAsLongs) {
++    argcnt++;                           // additional placeholder
++  }
+   const Type** fields = TypeTuple::fields(argcnt);
+   int argp = TypeFunc::Parms;
+   fields[argp++] = TypePtr::NOTNULL;    // a
+   fields[argp++] = TypePtr::NOTNULL;    // b
+   fields[argp++] = TypePtr::NOTNULL;    // n
+-  fields[argp++] = TypeInt::INT;        // len
++  if (CCallingConventionRequiresIntsAsLongs) {
++    fields[argp++] = TypeLong::LONG;    // len
++    fields[argp++] = TypeLong::HALF;    // placeholder
++  } else {
++    fields[argp++] = TypeInt::INT;      // len
++  }
+   fields[argp++] = TypeLong::LONG;      // inv
+   fields[argp++] = Type::HALF;
+   fields[argp++] = TypePtr::NOTNULL;    // result
+@@ -1029,11 +1037,19 @@
+   // create input type (domain)
+   int num_args      = 6;
+   int argcnt = num_args;
++  if (CCallingConventionRequiresIntsAsLongs) {
++    argcnt++;                           // additional placeholder
++  }
+   const Type** fields = TypeTuple::fields(argcnt);
+   int argp = TypeFunc::Parms;
+   fields[argp++] = TypePtr::NOTNULL;    // a
+   fields[argp++] = TypePtr::NOTNULL;    // n
+-  fields[argp++] = TypeInt::INT;        // len
++  if (CCallingConventionRequiresIntsAsLongs) {
++    fields[argp++] = TypeLong::LONG;    // len
++    fields[argp++] = TypeLong::HALF;    // placeholder
++  } else {
++    fields[argp++] = TypeInt::INT;      // len
++  }
+   fields[argp++] = TypeLong::LONG;      // inv
+   fields[argp++] = Type::HALF;
+   fields[argp++] = TypePtr::NOTNULL;    // result
+diff -r 76540c2dc48d src/share/vm/opto/type.cpp
+--- openjdk/hotspot/src/share/vm/opto/type.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/opto/type.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1001,21 +1001,10 @@
+ 
+ //------------------------------eq---------------------------------------------
+ // Structural equality check for Type representations
+-bool TypeF::eq( const Type *t ) const {
+-  if( g_isnan(_f) ||
+-      g_isnan(t->getf()) ) {
+-    // One or both are NANs.  If both are NANs return true, else false.
+-    return (g_isnan(_f) && g_isnan(t->getf()));
+-  }
+-  if (_f == t->getf()) {
+-    // (NaN is impossible at this point, since it is not equal even to itself)
+-    if (_f == 0.0) {
+-      // difference between positive and negative zero
+-      if (jint_cast(_f) != jint_cast(t->getf()))  return false;
+-    }
+-    return true;
+-  }
+-  return false;
++bool TypeF::eq(const Type *t) const {
++  // Bitwise comparison to distinguish between +/-0. These values must be treated
++  // as different to be consistent with C1 and the interpreter.
++  return (jint_cast(_f) == jint_cast(t->getf()));
+ }
+ 
+ //------------------------------hash-------------------------------------------
+@@ -1116,21 +1105,10 @@
+ 
+ //------------------------------eq---------------------------------------------
+ // Structural equality check for Type representations
+-bool TypeD::eq( const Type *t ) const {
+-  if( g_isnan(_d) ||
+-      g_isnan(t->getd()) ) {
+-    // One or both are NANs.  If both are NANs return true, else false.
+-    return (g_isnan(_d) && g_isnan(t->getd()));
+-  }
+-  if (_d == t->getd()) {
+-    // (NaN is impossible at this point, since it is not equal even to itself)
+-    if (_d == 0.0) {
+-      // difference between positive and negative zero
+-      if (jlong_cast(_d) != jlong_cast(t->getd()))  return false;
+-    }
+-    return true;
+-  }
+-  return false;
++bool TypeD::eq(const Type *t) const {
++  // Bitwise comparison to distinguish between +/-0. These values must be treated
++  // as different to be consistent with C1 and the interpreter.
++  return (jlong_cast(_d) == jlong_cast(t->getd()));
+ }
+ 
+ //------------------------------hash-------------------------------------------
+diff -r 76540c2dc48d src/share/vm/runtime/arguments.cpp
+--- openjdk/hotspot/src/share/vm/runtime/arguments.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/runtime/arguments.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -4157,6 +4157,11 @@
+     warning("Setting CompressedClassSpaceSize has no effect when compressed class pointers are not used");
+   }
+ 
++  if (UseOnStackReplacement && !UseLoopCounter) {
++    warning("On-stack-replacement requires loop counters; enabling loop counters");
++    FLAG_SET_DEFAULT(UseLoopCounter, true);
++  }
++
+ #ifndef PRODUCT
+   if (CompileTheWorld) {
+     // Force NmethodSweeper to sweep whole CodeCache each time.
+diff -r 76540c2dc48d src/share/vm/runtime/jniHandles.cpp
+--- openjdk/hotspot/src/share/vm/runtime/jniHandles.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/runtime/jniHandles.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1998, 2015, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -196,8 +196,10 @@
+   int _count;
+ public:
+   CountHandleClosure(): _count(0) {}
+-  virtual void do_oop(oop* unused) {
+-    _count++;
++  virtual void do_oop(oop* ooph) {
++    if (*ooph != JNIHandles::deleted_handle()) {
++      _count++;
++    }
+   }
+   virtual void do_oop(narrowOop* unused) { ShouldNotReachHere(); }
+   int count() { return _count; }
+diff -r 76540c2dc48d src/share/vm/runtime/objectMonitor.cpp
+--- openjdk/hotspot/src/share/vm/runtime/objectMonitor.cpp	Mon Feb 19 02:50:07 2018 +0000
++++ openjdk/hotspot/src/share/vm/runtime/objectMonitor.cpp	Fri Mar 02 20:53:52 2018 -0300
+@@ -381,6 +381,8 @@
+   { // Change java thread status to indicate blocked on monitor enter.
+     JavaThreadBlockedOnMonitorEnterState jtbmes(jt, this);
+ 
++    Self->set_current_pending_monitor(this);
++
+     DTRACE_MONITOR_PROBE(contended__enter, this, object(), jt);
+     if (JvmtiExport::should_post_monitor_contended_enter()) {
+       JvmtiExport::post_monitor_contended_enter(jt, this);
+@@ -395,8 +397,6 @@
+     OSThreadContendState osts(Self->osthread());
+     ThreadBlockInVM tbivm(jt);
+ 
+-    Self->set_current_pending_monitor(this);
+-
+     // TODO-FIXME: change the following for(;;) loop to straight-line code.
+     for (;;) {
+       jt->set_suspend_equivalent();
+diff -r 76540c2dc48d test/compiler/c1/Test8172751.java
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ openjdk/hotspot/test/compiler/c1/Test8172751.java	Fri Mar 02 20:53:52 2018 -0300
+@@ -0,0 +1,77 @@
++/*
++ * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ */
++
++/**
++ * @test
++ * @bug 8172751
++ * @summary OSR compilation at unreachable bci causes C1 crash
++ *
++ * @run main/othervm -XX:-BackgroundCompilation compiler.c1.Test8172751
++ */
++
++package compiler.c1;
++
++import java.lang.invoke.MethodHandle;
++import java.lang.invoke.MethodHandles;
++import java.lang.invoke.MutableCallSite;
++
++public class Test8172751 {
++    private static final MethodHandle CONSTANT_TRUE = MethodHandles.constant(boolean.class, true);
++    private static final MethodHandle CONSTANT_FALSE = MethodHandles.constant(boolean.class, false);
++    private static final MutableCallSite CALL_SITE = new MutableCallSite(CONSTANT_FALSE);
++    private static final int LIMIT = 1_000_000;
++    private static volatile int counter;
++
++    private static boolean doSomething() {
++        return counter++ < LIMIT;
++    }
++
++    private static void executeLoop() {
++        /*
++         * Start off with executing the first loop, then change the call site
++         * target so as to switch over to the second loop but continue running
++         * in the first loop. Eventually, an OSR compilation of the first loop
++         * is triggered. Yet C1 will not find the OSR entry, since it will
++         * have optimized out the first loop already during parsing.
++         */
++        if (CALL_SITE.getTarget() == CONSTANT_FALSE) {
++            int count = 0;
++            while (doSomething()) {
++                if (count++ == 1) {
++                    flipSwitch();
++                }
++            }
++        } else {
++            while (doSomething()) {
++            }
++        }
++    }
++
++    private static void flipSwitch() {
++        CALL_SITE.setTarget(CONSTANT_TRUE);
++    }
++
++    public static void main(String[] args) {
++        executeLoop();
++    }
++}
+diff -r 76540c2dc48d test/compiler/c1/TestPinnedIntrinsics.java
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ openjdk/hotspot/test/compiler/c1/TestPinnedIntrinsics.java	Fri Mar 02 20:53:52 2018 -0300
+@@ -0,0 +1,68 @@
++/*
++ * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ */
++
++/*
++ * @test
++ * @bug 8184271
++ * @summary Test correct scheduling of System.nanoTime and System.currentTimeMillis C1 intrinsics.
++ * @run main/othervm -XX:TieredStopAtLevel=1 -Xbatch
++ *                   -XX:CompileCommand=dontinline,compiler.c1.TestPinnedIntrinsics::checkNanoTime
++ *                   -XX:CompileCommand=dontinline,compiler.c1.TestPinnedIntrinsics::checkCurrentTimeMillis
++ *                   compiler.c1.TestPinnedIntrinsics
++ */
++
++package compiler.c1;
++
++public class TestPinnedIntrinsics {
++
++    private static void testNanoTime() {
++        long start = System.nanoTime();
++        long end = System.nanoTime();
++        checkNanoTime(end - start);
++    }
++
++    private static void checkNanoTime(long diff) {
++        if (diff < 0) {
++            throw new RuntimeException("testNanoTime failed with " + diff);
++        }
++    }
++
++    private static void testCurrentTimeMillis() {
++        long start = System.currentTimeMillis();
++        long end = System.currentTimeMillis();
++        checkCurrentTimeMillis(end - start);
++    }
++
++    private static void checkCurrentTimeMillis(long diff) {
++        if (diff < 0) {
++            throw new RuntimeException("testCurrentTimeMillis failed with " + diff);
++        }
++    }
++
++    public static void main(String[] args) {
++        for (int i = 0; i < 100_000; ++i) {
++            testNanoTime();
++            testCurrentTimeMillis();
++        }
++    }
++}
+diff -r 76540c2dc48d test/compiler/c2/FloatingPointFoldingTest.java
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ openjdk/hotspot/test/compiler/c2/FloatingPointFoldingTest.java	Fri Mar 02 20:53:52 2018 -0300
+@@ -0,0 +1,163 @@
++/*
++ * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++/**
++ * @test
++ * @bug 8073670
++ * @summary Test that causes C2 to fold two NaNs with different values into a single NaN.
++ * @run main/othervm -XX:-TieredCompilation -Xcomp -XX:CompileCommand=compileonly,FloatingPointFoldingTest.test_double_inf -XX:CompileCommand=compileonly,FloatingPointFoldingTest.test_double_zero -XX:CompileCommand=compileonly,FloatingPointFoldingTest.test_double_nan -XX:CompileCommand=compileonly,FloatingPointFoldingTest.test_float_inf -XX:CompileCommand=compileonly,FloatingPointFoldingTest.test_float_zero -XX:CompileCommand=compileonly,FloatingPointFoldingTest.test_float_nan FloatingPointFoldingTest
++ */
++
++public class FloatingPointFoldingTest {
++    // Double values.
++    public static final long MINUS_INF_LONGBITS = 0xfff0000000000000L;
++    public static final double DOUBLE_MINUS_INF = Double.longBitsToDouble(MINUS_INF_LONGBITS);
++
++    public static final long PLUS_INF_LONGBITS = 0x7ff0000000000000L;
++    public static final double DOUBLE_PLUS_INF = Double.longBitsToDouble(PLUS_INF_LONGBITS);
++
++    public static final long MINUS_ZERO_LONGBITS = 0x8000000000000000L;
++    public static final double DOUBLE_MINUS_ZERO = Double.longBitsToDouble(MINUS_ZERO_LONGBITS);
++
++    // We need two different NaN values. A floating point number is
++    // considered to be NaN is the sign bit is 0, all exponent bits
++    // are set to 1, and at least one bit of the exponent is not zero.
++    //
++    // As java.lang.Double.NaN is 0x7ff8000000000000L, we use
++    // 0x7ffc000000000000L as a second NaN double value.
++    public static final long NAN_LONGBITS = 0x7ffc000000000000L;
++    public static final double DOUBLE_NAN = Double.longBitsToDouble(NAN_LONGBITS);
++
++    // Float values.
++    public static final int MINUS_INF_INTBITS = 0xff800000;
++    public static final float FLOAT_MINUS_INF = Float.intBitsToFloat(MINUS_INF_INTBITS);
++
++    public static final int PLUS_INF_INTBITS = 0x7f800000;
++    public static final float FLOAT_PLUS_INF = Float.intBitsToFloat(PLUS_INF_INTBITS);
++
++    public static final int MINUS_ZERO_INTBITS = 0x80000000;
++    public static final float FLOAT_MINUS_ZERO = Float.intBitsToFloat(MINUS_ZERO_INTBITS);
++
++    // As java.lang.Float.NaN is 0x7fc00000, we use 0x7fe00000
++    // as a second NaN float value.
++    public static final int NAN_INTBITS = 0x7fe00000;
++    public static final float FLOAT_NAN = Float.intBitsToFloat(NAN_INTBITS);
++
++
++    // Double tests.
++    static void test_double_inf(long[] result) {
++        double d1 = DOUBLE_MINUS_INF;
++        double d2 = DOUBLE_PLUS_INF;
++        result[0] = Double.doubleToRawLongBits(d1);
++        result[1] = Double.doubleToRawLongBits(d2);
++    }
++
++    static void test_double_zero(long[] result) {
++        double d1 = DOUBLE_MINUS_ZERO;
++        double d2 = 0;
++        result[0] = Double.doubleToRawLongBits(d1);
++        result[1] = Double.doubleToRawLongBits(d2);
++    }
++
++    static void test_double_nan(long[] result) {
++        double d1 = DOUBLE_NAN;
++        double d2 = Double.NaN;
++        result[0] = Double.doubleToRawLongBits(d1);
++        result[1] = Double.doubleToRawLongBits(d2);
++    }
++
++    // Float tests.
++    static void test_float_inf(int[] result) {
++        float f1 = FLOAT_MINUS_INF;
++        float f2 = FLOAT_PLUS_INF;
++        result[0] = Float.floatToRawIntBits(f1);
++        result[1] = Float.floatToRawIntBits(f2);
++    }
++
++    static void test_float_zero(int[] result) {
++        float f1 = FLOAT_MINUS_ZERO;
++        float f2 = 0;
++        result[0] = Float.floatToRawIntBits(f1);
++        result[1] = Float.floatToRawIntBits(f2);
++    }
++
++    static void test_float_nan(int[] result) {
++        float f1 = FLOAT_NAN;
++        float f2 = Float.NaN;
++        result[0] = Float.floatToRawIntBits(f1);
++        result[1] = Float.floatToRawIntBits(f2);
++    }
++
++    // Check doubles.
++    static void check_double(long[] result, double d1, double d2) {
++        if (result[0] == result[1]) {
++            throw new RuntimeException("ERROR: Two different double values are considered equal. \n"
++                                       + String.format("\toriginal values: 0x%x 0x%x\n", Double.doubleToRawLongBits(d1), Double.doubleToRawLongBits(d2))
++                                       + String.format("\tvalues after execution of method test(): 0x%x 0x%x", result[0], result[1]));
++        }
++    }
++
++    // Check floats.
++    static void check_float(int[] result, float f1, float f2) {
++        if (result[0] == result[1]) {
++            throw new RuntimeException("ERROR: Two different float values are considered equal. \n"
++                                       + String.format("\toriginal values: 0x%x 0x%x\n", Float.floatToRawIntBits(f1), Float.floatToRawIntBits(f2))
++                                       + String.format("\tvalues after execution of method test(): 0x%x 0x%x", result[0], result[1]));
++        }
++    }
++
++    public static void main(String[] args) {
++        // Float tests.
++
++        int[] iresult = new int[2];
++
++        // -Inf and +Inf.
++        test_float_inf(iresult);
++        check_float(iresult, FLOAT_MINUS_INF, FLOAT_PLUS_INF);
++
++        // 0 and -0.
++        test_float_zero(iresult);
++        check_float(iresult, FLOAT_MINUS_ZERO, 0);
++
++        // Diferrent NaNs.
++        test_float_nan(iresult);
++        check_float(iresult, FLOAT_NAN, Float.NaN);
++
++        // Double tests.
++
++        long[] lresult = new long[2];
++
++        // -Inf and +Inf.
++        test_double_inf(lresult);
++        check_double(lresult, DOUBLE_MINUS_INF, DOUBLE_PLUS_INF);
++
++        // 0 and -0.
++        test_double_zero(lresult);
++        check_double(lresult, DOUBLE_MINUS_ZERO, 0);
++
++        // Diferrent NaNs.
++        test_double_nan(lresult);
++        check_double(lresult, DOUBLE_NAN, Double.NaN);
++    }
++}
+diff -r 76540c2dc48d test/compiler/loopopts/TestImpossibleIV.java
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ openjdk/hotspot/test/compiler/loopopts/TestImpossibleIV.java	Fri Mar 02 20:53:52 2018 -0300
+@@ -0,0 +1,51 @@
++/*
++ * Copyright 2016 Google, Inc.  All Rights Reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ */
++
++/*
++ * @test
++ * @bug 8166742
++ * @summary C2 IV elimination throws FPE
++ * @run main/othervm -XX:-TieredCompilation -XX:-BackgroundCompilation TestImpossibleIV
++ * @author Chuck Rasbold rasbold@google.com
++ */
++
++/*
++ * Use -XX:-TieredCompilation to get C2 only.
++ * Use -XX:-BackgroundCompilation to wait for compilation before test exit.
++ */
++
++public class TestImpossibleIV {
++
++  static private void testMethod() {
++    int sum = 0;
++    // A unit count-down loop which has an induction variable with
++    // MIN_VALUE stride.
++    for (int i = 100000; i >= 0; i--) {
++      sum += Integer.MIN_VALUE;
++    }
++  }
++
++  public static void main(String[] args) {
++    testMethod();
++  }
++}
+diff -r 76540c2dc48d test/compiler/unsafe/TestRawAliasing.java
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ openjdk/hotspot/test/compiler/unsafe/TestRawAliasing.java	Fri Mar 02 20:53:52 2018 -0300
+@@ -0,0 +1,70 @@
++/*
++ * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ */
++
++/*
++ * @test
++ * @bug 8178047
++ * @run main/othervm -XX:CompileCommand=exclude,*.main -XX:-TieredCompilation -XX:-BackgroundCompilation compiler.unsafe.TestRawAliasing
++ */
++
++package compiler.unsafe;
++
++import java.lang.reflect.Field;
++
++public class TestRawAliasing {
++    static private final sun.misc.Unsafe UNSAFE;
++    static {
++        try {
++            Field f = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
++            f.setAccessible(true);
++            UNSAFE = (sun.misc.Unsafe) f.get(null);
++        } catch (Exception e) {
++            throw new RuntimeException("Unable to get Unsafe instance.", e);
++        }
++    }
++
++    static private final int OFFSET_X = 50;
++    static private final int OFFSET_Y = 100;
++
++    private static int test(long base_plus_offset_x, long base_plus_offset_y, int magic_value) {
++        // write 0 to a location
++        UNSAFE.putByte(base_plus_offset_x - OFFSET_X, (byte)0);
++        // write unfoldable value to really the same location with another base
++        UNSAFE.putByte(base_plus_offset_y - OFFSET_Y, (byte)magic_value);
++        // read the value back, should be equal to "unfoldable_value"
++        return UNSAFE.getByte(base_plus_offset_x - OFFSET_X);
++    }
++
++    private static final int OFF_HEAP_AREA_SIZE = 128;
++    private static final byte MAGIC = 123;
++
++    // main is excluded from compilation since we don't want the test method to inline and make base values fold
++    public static void main(String... args) {
++        long base = UNSAFE.allocateMemory(OFF_HEAP_AREA_SIZE);
++        for (int i = 0; i < 100_000; i++) {
++            if (test(base + OFFSET_X, base + OFFSET_Y, MAGIC) != MAGIC) {
++                throw new RuntimeException("Unexpected magic value");
++            }
++        }
++    }
++}
+diff -r 76540c2dc48d test/runtime/Metaspace/MaxMetaspaceSizeTest.java
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ openjdk/hotspot/test/runtime/Metaspace/MaxMetaspaceSizeTest.java	Fri Mar 02 20:53:52 2018 -0300
+@@ -0,0 +1,47 @@
++/*
++ * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ */
++
++import com.oracle.java.testlibrary.ProcessTools;
++import com.oracle.java.testlibrary.OutputAnalyzer;
++
++/*
++ * @test MaxMetaspaceSizeTest
++ * @requires vm.bits == "64"
++ * @bug 8087291
++ * @library /testlibrary
++ * @run main/othervm MaxMetaspaceSizeTest
++ */
++
++public class MaxMetaspaceSizeTest {
++    public static void main(String... args) throws Exception {
++        ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(
++            "-Xmx1g",
++            "-XX:InitialBootClassLoaderMetaspaceSize=4195328",
++            "-XX:MaxMetaspaceSize=4195328",
++            "-XX:+UseCompressedClassPointers",
++            "-XX:CompressedClassSpaceSize=1g",
++            "-version");
++        OutputAnalyzer output = new OutputAnalyzer(pb.start());
++        output.shouldContain("MaxMetaspaceSize is too small.");
++    }
++}

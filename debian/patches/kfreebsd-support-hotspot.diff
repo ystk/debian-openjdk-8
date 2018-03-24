@@ -140,7 +140,23 @@ Index: b/hotspot/src/os/linux/vm/os_linux.cpp
 +#endif
    st->cr();
  }
+
+--- a/hotspot/src/os/linux/vm/os_linux.cpp	2017-07-12 08:27:13.000000000 +0200
++++ b/hotspot/src/os/linux/vm/os_linux.cpp	2017-07-25 13:13:21.333303596 +0200
+@@ -3422,8 +3422,12 @@
+     return NULL;
+   }
  
++#ifndef __FreeBSD_kernel__
+   // SHM_REMAP is needed to allow shmat to map over an existing mapping.
+   char* addr = (char*)shmat(shmid, pre_reserved_addr, SHM_REMAP);
++#else
++  char* addr = (char*)shmat(shmid, pre_reserved_addr, 0);
++#endif
+ 
+   if ((intptr_t)addr == -1) {
+     int err = errno;
+
 Index: b/hotspot/src/os/linux/vm/osThread_linux.cpp
 ===================================================================
 --- a/hotspot/src/os/linux/vm/osThread_linux.cpp

@@ -1,35 +1,8 @@
-
---- a/common/autoconf/generated-configure.sh
-+++ b/common/autoconf/generated-configure.sh
-@@ -6919,6 +6919,12 @@ test -n "$target_alias" &&
-       VAR_CPU_BITS=64
-       VAR_CPU_ENDIAN=big
-       ;;
-+    m68k)
-+      VAR_CPU=m68k
-+      VAR_CPU_ARCH=m68k
-+      VAR_CPU_BITS=32
-+      VAR_CPU_ENDIAN=big
-+      ;;
-     *)
-       as_fn_error $? "unsupported cpu $build_cpu" "$LINENO" 5
-       ;;
-@@ -7062,6 +7068,12 @@ $as_echo "$OPENJDK_BUILD_OS-$OPENJDK_BUI
-       VAR_CPU_BITS=64
-       VAR_CPU_ENDIAN=big
-       ;;
-+    m68k)
-+      VAR_CPU=m68k
-+      VAR_CPU_ARCH=m68k
-+      VAR_CPU_BITS=32
-+      VAR_CPU_ENDIAN=big
-+      ;;
-     *)
-       as_fn_error $? "unsupported cpu $host_cpu" "$LINENO" 5
-       ;;
---- a/common/autoconf/platform.m4
-+++ b/common/autoconf/platform.m4
-@@ -156,6 +156,12 @@ AC_DEFUN([PLATFORM_EXTRACT_VARS_FROM_CPU
+Index: jdk8u-c684352da3e3/common/autoconf/platform.m4
+===================================================================
+--- jdk8u-c684352da3e3.orig/common/autoconf/platform.m4
++++ jdk8u-c684352da3e3/common/autoconf/platform.m4
+@@ -102,6 +102,12 @@ AC_DEFUN([PLATFORM_EXTRACT_VARS_FROM_CPU
        VAR_CPU_BITS=64
        VAR_CPU_ENDIAN=big
        ;;
@@ -42,8 +15,10 @@
      *)
        AC_MSG_ERROR([unsupported cpu $1])
        ;;
---- a/hotspot/src/os_cpu/linux_zero/vm/atomic_linux_zero.inline.hpp
-+++ b/hotspot/src/os_cpu/linux_zero/vm/atomic_linux_zero.inline.hpp
+Index: jdk8u-c684352da3e3/hotspot/src/os_cpu/linux_zero/vm/atomic_linux_zero.inline.hpp
+===================================================================
+--- jdk8u-c684352da3e3.orig/hotspot/src/os_cpu/linux_zero/vm/atomic_linux_zero.inline.hpp
++++ jdk8u-c684352da3e3/hotspot/src/os_cpu/linux_zero/vm/atomic_linux_zero.inline.hpp
 @@ -38,7 +38,7 @@
   * __m68k_cmpxchg
   *
@@ -109,8 +84,10 @@
      }
  }
  #endif // M68K
---- a/hotspot/src/share/vm/memory/allocation.hpp
-+++ b/hotspot/src/share/vm/memory/allocation.hpp
+Index: jdk8u-c684352da3e3/hotspot/src/share/vm/memory/allocation.hpp
+===================================================================
+--- jdk8u-c684352da3e3.orig/hotspot/src/share/vm/memory/allocation.hpp
++++ jdk8u-c684352da3e3/hotspot/src/share/vm/memory/allocation.hpp
 @@ -191,7 +191,7 @@ template <MEMFLAGS F> class CHeapObj ALL
                                 throw();
    void  operator delete(void* p);
@@ -147,8 +124,22 @@
  
  // One of the following macros must be used when allocating an array
  // or object to determine whether it should reside in the C heap on in
---- a/hotspot/src/share/vm/oops/oop.hpp
-+++ b/hotspot/src/share/vm/oops/oop.hpp
+Index: jdk8u-c684352da3e3/hotspot/src/share/vm/oops/constMethod.hpp
+===================================================================
+--- jdk8u-c684352da3e3.orig/hotspot/src/share/vm/oops/constMethod.hpp
++++ jdk8u-c684352da3e3/hotspot/src/share/vm/oops/constMethod.hpp
+@@ -517,6 +517,6 @@ private:
+ 
+   // Verify
+   void verify_on(outputStream* st);
+-};
++} __attribute__ ((aligned (4)));
+ 
+ #endif // SHARE_VM_OOPS_CONSTMETHODOOP_HPP
+Index: jdk8u-c684352da3e3/hotspot/src/share/vm/oops/oop.hpp
+===================================================================
+--- jdk8u-c684352da3e3.orig/hotspot/src/share/vm/oops/oop.hpp
++++ jdk8u-c684352da3e3/hotspot/src/share/vm/oops/oop.hpp
 @@ -374,6 +374,6 @@ class oopDesc {
    static int mark_offset_in_bytes()    { return offset_of(oopDesc, _mark); }
    static int klass_offset_in_bytes()   { return offset_of(oopDesc, _metadata._klass); }
@@ -157,8 +148,11 @@
 +} __attribute__ ((aligned (4)));
  
  #endif // SHARE_VM_OOPS_OOP_HPP
---- a/jdk/make/gensrc/GensrcX11Wrappers.gmk
-+++ b/jdk/make/gensrc/GensrcX11Wrappers.gmk
+
+Index: jdk8u-c684352da3e3/jdk/make/gensrc/GensrcX11Wrappers.gmk
+===================================================================
+--- jdk8u-c684352da3e3.orig/jdk/make/gensrc/GensrcX11Wrappers.gmk
++++ jdk8u-c684352da3e3/jdk/make/gensrc/GensrcX11Wrappers.gmk
 @@ -57,12 +57,16 @@ else
      GENSRC_X11_VERSION := 32 64
    endif
@@ -177,8 +171,10 @@
  	$(MKDIR) -p $(@D)
  	$(RM) '$@'
  	$(SORT) $< > $@
---- a/jdk/src/solaris/bin/java_md_solinux.c
-+++ b/jdk/src/solaris/bin/java_md_solinux.c
+Index: jdk8u-c684352da3e3/jdk/src/solaris/bin/java_md_solinux.c
+===================================================================
+--- jdk8u-c684352da3e3.orig/jdk/src/solaris/bin/java_md_solinux.c
++++ jdk8u-c684352da3e3/jdk/src/solaris/bin/java_md_solinux.c
 @@ -1023,12 +1023,24 @@ void SplashFreeLibrary() {
      }
  }
@@ -222,8 +218,10 @@
        void * tmp;
        thr_join(tid, NULL, &tmp);
        rslt = (int)tmp;
+Index: jdk8u-c684352da3e3/jdk/src/solaris/classes/sun/awt/X11/generator/sizes.32-linux-m68k
+===================================================================
 --- /dev/null
-+++ b/jdk/src/solaris/classes/sun/awt/X11/generator/sizes.32-linux-m68k
++++ jdk8u-c684352da3e3/jdk/src/solaris/classes/sun/awt/X11/generator/sizes.32-linux-m68k
 @@ -0,0 +1,1016 @@
 +long	4
 +int	4
@@ -1241,15 +1239,3 @@
 +XTextProperty.format	8
 +XTextProperty.nitems	12
 +XTextProperty	16
---- a/hotspot/src/share/vm/oops/constMethod.hpp
-+++ b/hotspot/src/share/vm/oops/constMethod.hpp
-@@ -224,6 +224,9 @@ private:
-   u2                _max_locals;                 // Number of local variables used by this method
-   u2                _size_of_parameters;         // size of the parameter block (receiver + arguments) in words
-   u2                _orig_method_idnum;          // Original unique identification number for the method
-+#ifdef __m68k__
-+  u2                _padding;                    // pad the structure to a multiple of 32bit
-+#endif
- 
-   // Constructor
-   ConstMethod(int byte_code_size,

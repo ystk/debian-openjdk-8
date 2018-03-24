@@ -1,8 +1,291 @@
-openjdk-8 (8u131-b11-1~bpo8+1) jessie-backports; urgency=medium
+openjdk-8 (8u162-b12-1~bpo8+1) jessie-backports; urgency=medium
 
   * Rebuild for jessie-backports.
 
- -- Moritz Muehlenhoff <moritz@wikimedia.org>  Wed, 03 May 2017 10:43:42 +0000
+ -- Moritz Muehlenhoff <moritz@wikimedia.org>  Fri, 16 Mar 2018 13:40:52 +0000
+
+openjdk-8 (8u162-b12-1) unstable; urgency=high
+
+  [ Tiago Stürmer Daitx ]
+  * Update to 8u162-b12. Hotspot 8u162-b12 for aarch32 and 8u161-b16
+    for aarch64 (wth 8u162-b12 patches).
+  * Security updates:
+    - CVE-2018-2633,S8186606: Improve LDAP lookup robustness.
+    - CVE-2018-2637,S8186998: Improve JMX supportive features.
+    - CVE-2018-2634,S8186600: Improve property negotiations.
+    - CVE-2018-2582,S8174962: Better interface invocations.
+    - CVE-2018-2641,S8185325: Improve GTK initialization.
+    - CVE-2018-2618,S8185292: Stricter key generation.
+    - CVE-2018-2629,S8186212: Improve GSS handling.
+    - CVE-2018-2603,S8182387: Improve PKCS usage.
+    - CVE-2018-2599,S8182125: Improve reliability of DNS lookups.
+    - CVE-2018-2602,S8182601: Improve usage messages.
+    - CVE-2018-2588,S8178449: Improve LDAP logins.
+    - CVE-2018-2678,S8191142: More refactoring for naming deserialization
+      cases.
+    - CVE-2018-2677,S8190289: More refactoring for client deserialization
+      cases.
+    - CVE-2018-2663,S8189284: More refactoring for deserialization cases.
+    - CVE-2018-2579,S8172525: Improve key keying case.
+  * d/p/aarch64-hotspot-8u162-b12.patch: update aarch64 hotspot to 8u162-b12.
+  * d/p/icedtea-4953367.patch: removed, fixed upstream by "S8136570: Stop
+    changing user environment variables related to /usr/dt".
+  * d/p/gcc6.diff: removed, fixed upstream.
+  * d/p/jdk-getAccessibleValue.diff: updated, removed chunks fixed upstream
+    by "S8076249: NPE in AccessBridge while editing JList model" and
+    "S8145207: [macosx] JList, VO can't access non-visible list items".
+  * d/p/openjdk-ppc64el-S8170153.patch, d/p/8164293.diff,
+    d/p/hotspot-ppc64el-S8145913-montgomery-multiply-intrinsic.patch,
+    d/p/hotspot-ppc64el-S8168318-cmpldi.patch,
+    d/p/hotspot-ppc64el-S8170328-andis.patch,
+    d/p/hotspot-ppc64el-S8175813-mbind-invalid-argument.patch,
+    d/p/hotspot-ppc64el-S8181055-use-numa-v2-api.patch,
+    d/p/hotspot-ppc64el-S8181810-leverage-extrdi.patch: removed,
+    applied upstream.
+  * d/rules, d/control: depend on GKT3 instead of GTK2 for newer releases.
+    LP: #1735482.
+  * d/rules: wait 10 seconds before issuing SIGKILL to buildwatch.
+  * d/buildwatch.sh: find hs_err files and cat them to help debugging build
+    failures.
+  * S8173853: IllegalArgumentException in java.awt.image.ReplicateScaleFilter.
+    LP: #8173853.
+
+  [ Matthias Klose ]
+  * Disable Hotspot workaround for Exec Shield (Debian only).
+    Closes: #876051.
+  * Fix some lintian warnings.
+
+ -- Matthias Klose <doko@ubuntu.com>  Thu, 15 Mar 2018 18:19:50 +0100
+
+openjdk-8 (8u151-b12-1) unstable; urgency=high
+
+  * Update to 8u151-b12. Hotspot 8u144-b01 for aarch32 with 8u151 hotspot
+    patches.
+
+  [ Tiago Stürmer Daitx ]
+  * Security patches:
+    - CVE-2017-10274, S8169026: Handle smartcard clean up better. If a
+      CardImpl can be recovered via finalization, then separate instances
+      pointing to the same device can be created.
+    - CVE-2017-10281, S8174109: Better queuing priorities. PriorityQueue's
+      readObject allocates an array based on data in the stream which could
+      cause an OOM.
+    - CVE-2017-10285, S8174966: Unreferenced references. RMI's Unreferenced
+      thread can be used as the root of a Trusted Method Chain.
+    - CVE-2017-10295, S8176751: Better URL connections. On Ubuntu (and
+      possibly other Linux flavors) CR-NL in the host field are ignored and
+      can be used to inject headers in an HTTP request stream.
+    - CVE-2017-10388, S8178794: Correct Kerberos ticket grants. Kerberos
+      implementations can incorrectly take information from the unencrypted
+      portion of the ticket from the KDC. This can lead to an MITM attack
+      impersonating Kerberos services.
+    - CVE-2017-10346, S8180711: Better alignment of special invocations. A
+      missing load constraint for some invokespecial cases can allow invoking
+      a method from an unrelated class.
+    - CVE-2017-10350, S8181100: Better Base Exceptions. An array is allocated
+      based on data in the serial stream without a limit on the size.
+    - CVE-2017-10347, S8181323: Better timezone processing. An array is
+      allocated based on data in the serial stream without a limit on the
+      size.
+    - CVE-2017-10349, S8181327: Better Node predications. An array is
+      allocated based on data in the serial stream without a limit on the size.
+    - CVE-2017-10345, S8181370: Better keystore handling. A malicious
+      serialized object in a keystore can cause a DoS when using keytool.
+    - CVE-2017-10348, S8181432: Better processing of unresolved permissions.
+      An array is allocated based on data in the serial stream without a limit
+      on the size.
+    - CVE-2017-10357, S8181597: Process Proxy presentation. A malicious
+      serialized stream could cause an OOM due to lack on checking on the
+      number of interfaces read from the stream for a Proxy.
+    - CVE-2017-10355, S8181612: More stable connection processing. If an
+      attack can cause an application to open a connection to a malicious FTP
+      server (e.g., via XML), then a thread can be tied up indefinitely in
+      accept(2).
+    - CVE-2017-10356, S8181692: Update storage implementations. JKS and JCEKS
+      keystores should be retired from common use in favor of more modern
+      keystore protections.
+    - CVE-2016-10165, S8183028: Improve CMS header processing. Missing bounds
+      check could lead to leaked memory contents.
+    - CVE-2016-9841, S8184682: Upgrade compression library. There were four
+      off by one errors found in the zlib library. Two of them are long typed
+      which could lead to RCE.
+  * debian/rules:
+    - openjdk8 now ships limited and unlimited policy.jar files (S8157561)
+      into their own directories under jre/lib/security/policy.
+  * debian/rules, d/p/sec-webrev-8u151-hotspot-8179084.patch,
+    d/p/sec-webrev-8u151-hotspot-8180711.patch: Apply hotspot security updates
+    to both aarch32 and aarch64.
+  * d/p/gcc6.diff, d/p/aarch64.diff, d/p/aarch32.diff, d/p/m68k-support.diff,
+    d/p/system-libjpeg.diff: Remove hunks related to the generated configure
+    file generated during the build.
+  * d/p/hotspot-ppc64el-S8168318-cmpldi.patch: Use cmpldi instead of li/cmpld.
+    LP: #1723893.
+  * d/p/hotspot-ppc64el-S8170328-andis.patch: Use andis instead of lis/and.
+    LP: #1723862.
+  * d/p/hotspot-ppc64el-S8145913-montgomery-multiply-intrinsic.patch: Add
+    Montgomery multiply intrinsic. LP: #1723860.
+  * d/p/hotspot-ppc64el-S8181810-leverage-extrdi.patch: Leverage extrdi for
+    bitfield extract is absent in OpenJDK 8. LP: #1723861.
+  * d/p/jdk-S8165852-overlayfs.patch: Mount point not found for a file which
+    is present in overlayfs.
+
+  [ Matthias Klose ]
+  * Bump standards version.
+
+ -- Matthias Klose <doko@ubuntu.com>  Wed, 01 Nov 2017 07:12:56 +0100
+
+openjdk-8 (8u144-b01-2) unstable; urgency=medium
+
+  [ Matthias Klose ]
+  * Don't regenerate the control file during the build.
+  * Enable systemtap on sh4.
+  * Bump standards version to 4.1.0.
+  * Build using GCC 7 on recent development versions.
+
+  [ Tiago Stürmer Daitx ]
+  * debian/rules:
+    - when zero/shark alternate vm is build, add '-zero KNOWN' to jvm.cfg.
+    - for non-hotspot builds add '-zero ALIASED_TO -server' to jvm.cfg.
+    - enable zero alternate vm on armhf.
+  * debian/jvm.cfg-client_default: aarch32 only builds the client
+    compiler and requires its own default jvm. Closes: #874434.
+
+ -- Matthias Klose <doko@ubuntu.com>  Sat, 30 Sep 2017 02:37:14 +0200
+
+openjdk-8 (8u144-b01-1) unstable; urgency=medium
+
+  * Update to 8u144-b01.
+    - fix regression introduced by security fix S8169392. LP: #1707082.
+
+  [ Matthias Klose ]
+  * Fix libjvm.so's .debug file names. LP: #1548434.
+  * Remove dependency on multiarch-support. Closes: #870520.
+
+  [ Tiago Stürmer Daitx ]
+  * debian/apport-hook.py:
+    - truncate hs_err if bigger than 100 KiB instead of ignoring it.
+    - add message if hs_err file is not found at expected location.
+    - report file size in human readble SI units.
+  * debian/control.in:
+    - move 'Breaks:' from openjdk-8-jdk-headless to openjdk-8-jre-headless.
+    - remove jamvm references.
+  * debian/control.jamvm-jre: removed.
+  * debian/control.jamvm-trans: transactional package for jamvm.
+  * debian/rules:
+    - add aarch32 hotspot support.
+    - build aarch32 using client jvm-variant (no server in aarch32 port).
+    - use DEB_HOST_ARCH instead of DEB_HOST_ARCH_CPU as armel and armhf
+      are both reported as arm.
+    - explicitly add kfreebsd-i386, kfreebsd-amd64, hurd-i386 to arch_map
+      and archdir_map due to usage of DEB_HOST_ARCH.
+    - avoid building zero as an alternative vm for aarch32.
+    - disable precompiled headers on Trusty to minimize g++-4.8 segfaults.
+    - don't build zero alternate vm on Trusty, avoid g++-4.8 segfaults.
+    - add a 'Breaks:' entry to ca-certificates-java for all releases
+      except Trusty. LP: #1706567.
+    - remove jamvm.
+  * debian/patches/aarch64.diff: remove unnecessary chunks as aarch64 is
+    now upstream.
+  * debian/patches/aarch32.diff: add required changes to root and jdk to
+    build aarch32.
+  * debian/patches/hotspot-libpath-aarch32.diff: copied from
+    hotspot-libpath-default.diff.
+  * debian/patches/ppc64le-8036767.diff: updated.
+  * debian/patches/jdk-ppc64el-S8170153.patch: updated to include aarch64.
+  * debian/patches/jdk-java-nio-bits-unligned-aarch64.diff: Check for
+    "aarch64" along with other unaligned access supporting architectures.
+
+ -- Matthias Klose <doko@ubuntu.com>  Wed, 23 Aug 2017 21:41:07 +0200
+
+openjdk-8 (8u141-b15-3) unstable; urgency=high
+
+  * Fix building the javadocs, build error introduced by the m68k changes.
+  * Update the kfreebsd patches (Adrian Glaubitz). Closes: #869643, #869672.
+
+ -- Matthias Klose <doko@ubuntu.com>  Tue, 25 Jul 2017 17:03:27 +0200
+
+openjdk-8 (8u141-b15-2) unstable; urgency=high
+
+  [ Matthias Klose ]
+  * Update the m68k-support patch (Adrian Glaubitz). Closes: #864180.
+  * Disable generation of jvmti.html on m68k (Adrian Glaubitz).
+    Closes: #864205.
+  * Disable the jamvm autopkg tests.
+  * CVE-2017-10243 is also fixed in 8u141-b15 (S8182054).
+
+  [ Tiago Stürmer Daitx ]
+  * patches/hotspot-ppc64el-S8181055-use-numa-v2-api.patch: mbind invalid
+    argument message is still seen after S8175813; use numa_interleave_memory
+    v2 api when available. LP: #1705763.
+
+ -- Matthias Klose <doko@ubuntu.com>  Mon, 24 Jul 2017 23:09:09 +0200
+
+openjdk-8 (8u141-b15-1) unstable; urgency=high
+
+  * Update to 8u141-b15, Hotspot 8u141-b16 for AArch64.
+  * Security fixes from 8u141:
+    - CVE-2017-10102, S8163958: Improved garbage collection.
+    - CVE-2017-10053, S8169209: Improved image post-processing steps.
+    - CVE-2017-10067, S8169392: Additional jar validation steps.
+    - CVE-2017-10081, S8170966: Right parenthesis issue.
+    - CVE-2017-10078, S8171539: Better script accessibility for JavaScript.
+    - CVE-2017-10087, S8172204: Better Thread Pool execution.
+    - CVE-2017-10089, S8172461: Service Registration Lifecycle.
+    - CVE-2017-10090, S8172465: Better handling of channel groups.
+    - CVE-2017-10096, S8172469: Transform Transformer Exceptions.
+    - CVE-2017-10101, S8173286: Better reading of text catalogs.
+    - CVE-2017-10107, S8173697: Less Active Activations.
+    - CVE-2017-10074, S8173770: Image conversion improvements.
+    - CVE-2017-10110, S8174098: Better image fetching.
+    - CVE-2017-10108, S8174105: Better naming attribution.
+    - CVE-2017-10109, S8174113: Better sourcing of code.
+    - CVE-2017-10115, S8175106: Higher quality DSA operations.
+    - CVE-2017-10118, S8175110: Higher quality ECDSA operations.
+    - CVE-2017-10116, S8176067: Proper directory lookup processing.
+    - CVE-2017-10135, S8176760: Better handling of PKCS8 material.
+    - CVE-2017-10176, S8178135: Additional elliptic curve support.
+    - CVE-2017-10193, S8179101: Improve algorithm constraints implementation.
+    - CVE-2017-10198, S8179998: Clear certificate chain connections.
+    - S8174770: Check registry registration location.
+    - S8174873: Improved certificate procesing.
+    - S8176055: JMX diagnostic improvements.
+    - S8176536: Improved algorithm constraints checking.
+    - S8181420: PPC: Image conversion improvements.
+    - S8182054: Improve wsdl support.
+    - S8184185: Rearrange MethodHandle arrangements.
+
+  [ Matthias Klose ]
+  * Provide jvmdir symlink in /usr/lib/debug. Closes: #867314.
+  * Fix pt_BR translation in awt message. Closes: #863331.
+
+  [ Tiago Stürmer Daitx ]
+  * debian/rules:
+    - enable apport hook on Ubuntu and derivatives only.
+    - remove with_zenhai logic.
+    - remove unused with_tzdata logic, move tzdata build dependency
+      to control.in.
+    - add Breaks:tzdata-java except for wheezy, jessie or trusty.
+    - re-enable jamvm for Xenial only.
+    - run debian/control before build so we won't build with a invalid
+      control file.
+    - remove logic to select between ttf or font packages and depend
+      on fonts-wqy-microhei and fonts-wqy-zenhei instead
+  * debian/apport-hook.py: add an apport hook to include conffiles
+    modified by the user on any report and the hs_err log file on
+    crash report only. LP: #1696886.
+  * patches/fontconfig-arphic-uming.diff: only enabled when with_zenhai
+    was false; not required since lenny.
+  * patches/hotspot-ppc64el-S8175813-mbind-invalid-argument.patch: prevent
+    invalid argument message when invoking UseNUMA on a system with
+    non-consecutive numa topology. LP: #1697348.
+
+ -- Matthias Klose <doko@ubuntu.com>  Fri, 21 Jul 2017 13:51:05 +0200
+
+openjdk-8 (8u131-b11-2) unstable; urgency=medium
+
+  * Tighten dependency on libatk-wrapper-java-jni. Closes: #862508.
+
+ -- Matthias Klose <doko@ubuntu.com>  Tue, 16 May 2017 14:38:22 -0700
 
 openjdk-8 (8u131-b11-1) unstable; urgency=high
 

@@ -1112,16 +1112,16 @@ Index: b/jdk/src/solaris/native/java/net/NetworkInterface.c
  
      if (ioctl(sock, SIOCGLIFHWADDR, &lif) != -1) {
          struct sockaddr_dl *sp;
-@@ -1907,7 +1911,7 @@ static int getFlags(int sock, const char
+@@ -1861,7 +1861,7 @@
  
  
  /** BSD **/
 -#ifdef _ALLBSD_SOURCE
 +#if defined(_ALLBSD_SOURCE) || defined(__FreeBSD_kernel__)
- /* Open socket for further ioct calls, try v4 socket first and
-  * if it falls return v6 socket
-  */
-@@ -2036,7 +2040,11 @@ static netif *enumIPv6Interfaces(JNIEnv
+ 
+ /*
+  * Opens a socket for further ioct calls. Tries AF_INET socket first and
+@@ -1976,6 +1976,10 @@
              continue;
  
          memset(&ifr6, 0, sizeof(ifr6));
@@ -1130,9 +1130,9 @@ Index: b/jdk/src/solaris/native/java/net/NetworkInterface.c
 +#else
          strlcpy(ifr6.ifr_name, ifa->ifa_name, sizeof(ifr6.ifr_name));
 +#endif
-         memcpy(&ifr6.ifr_addr, ifa->ifa_addr, MIN(sizeof(ifr6.ifr_addr), ifa->ifa_addr->sa_len));
- 
-         if (ioctl(sock, SIOCGIFNETMASK_IN6, (caddr_t)&ifr6) < 0) {
+         memcpy(&ifr6.ifr_addr, ifa->ifa_addr,
+                MIN(sizeof(ifr6.ifr_addr), ifa->ifa_addr->sa_len));
+
 Index: b/jdk/src/solaris/native/java/net/net_util_md.c
 ===================================================================
 --- a/jdk/src/solaris/native/java/net/net_util_md.c
@@ -4491,7 +4491,7 @@ Index: b/jdk/make/lib/Awt2dLibraries.gmk
    LIBAWT_FILES += awt_LoadLibrary.c initIDs.c img_colors.c
  endif
  
-@@ -478,7 +478,7 @@ $(eval $(call SetupNativeCompilation,BUI
+@@ -478,7 +478,7 @@
      MAPFILE := $(LIBAWT_MAPFILE), \
      LDFLAGS := $(LDFLAGS_JDKLIB) $(call SET_SHARED_LIBRARY_ORIGIN), \
      LDFLAGS_solaris := -R/usr/dt/lib$(OPENJDK_TARGET_CPU_ISADIR) -R$(OPENWIN_LIB)$(OPENJDK_TARGET_CPU_ISADIR), \
@@ -4509,7 +4509,7 @@ Index: b/jdk/make/lib/Awt2dLibraries.gmk
              $(call SET_SHARED_LIBRARY_ORIGIN,/..), \
          LDFLAGS_solaris := -L$(OPENWIN_HOME)/sfw/lib$(OPENJDK_TARGET_CPU_ISADIR) \
              -L$(OPENWIN_LIB)$(OPENJDK_TARGET_CPU_ISADIR) \
-@@ -687,7 +687,7 @@ $(eval $(call SetupNativeCompilation,BUI
+@@ -687,7 +687,7 @@
      LDFLAGS_windows := $(WIN_AWT_LIB) $(WIN_JAVA_LIB), \
      LDFLAGS_SUFFIX_solaris := -lawt -ljava -ljvm -lc, \
      LDFLAGS_SUFFIX_macosx := $(LIBM) -lawt -ljava -ljvm, \

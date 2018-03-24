@@ -2,7 +2,7 @@
 Package: @basename@-jre-zero
 Architecture: @altzero_archs@
 Multi-Arch: same
-Priority: extra
+Priority: optional
 Pre-Depends: ${dpkg:Depends}
 Depends: @basename@-jre-headless (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Provides: ${zerovm:Provides}
