@@ -1,0 +1,53 @@
+# HG changeset patch
+# User thartmann
+# Date 1511867670 -3600
+#      Tue Nov 28 12:14:30 2017 +0100
+# Node ID 48900d625d6631d482f1c724a415f5f68cc57908
+# Parent  671244881e164253346664edfce500843b99b16c
+8190877: Better handling of abstract classes
+Reviewed-by: kvn, vlivanov, rhalade, ahgross, jwilhelm
+Contributed-by: tobias.hartmann@oracle.com
+
+diff --git openjdk/hotspot/src/share/vm/code/dependencies.cpp openjdk/hotspot/src/share/vm/code/dependencies.cpp
+--- openjdk/hotspot/src/share/vm/code/dependencies.cpp
++++ openjdk/hotspot/src/share/vm/code/dependencies.cpp
+@@ -793,6 +793,14 @@
+     _signature = NULL;
+     initialize(participant);
+   }
++  ClassHierarchyWalker(Klass* participants[], int num_participants) {
++    _name      = NULL;
++    _signature = NULL;
++    initialize(NULL);
++    for (int i = 0; i < num_participants; ++i) {
++      add_participant(participants[i]);
++    }
++  }
+ 
+   // This is common code for two searches:  One for concrete subtypes,
+   // the other for concrete method implementations and overrides.
+@@ -891,6 +899,24 @@
+       // Search class hierarchy first.
+       Method* m = InstanceKlass::cast(k)->find_instance_method(_name, _signature);
+       if (!Dependencies::is_concrete_method(m, k)) {
++        // Check for re-abstraction of method
++        if (!k->is_interface() && m != NULL && m->is_abstract()) {
++          // Found a matching abstract method 'm' in the class hierarchy.
++          // This is fine iff 'k' is an abstract class and all concrete subtypes
++          // of 'k' override 'm' and are participates of the current search.
++          ClassHierarchyWalker wf(_participants, _num_participants);
++          Klass* w = wf.find_witness_subtype(k);
++          if (w != NULL) {
++            Method* wm = InstanceKlass::cast(w)->find_instance_method(_name, _signature);
++            if (!Dependencies::is_concrete_method(wm, w)) {
++              // Found a concrete subtype 'w' which does not override abstract method 'm'.
++              // Bail out because 'm' could be called with 'w' as receiver (leading to an
++              // AbstractMethodError) and thus the method we are looking for is not unique.
++              _found_methods[_num_participants] = m;
++              return true;
++            }
++          }
++        }
+         // Check interface defaults also, if any exist.
+         Array<Method*>* default_methods = InstanceKlass::cast(k)->default_methods();
+         if (default_methods == NULL)

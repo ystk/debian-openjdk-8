@@ -1,0 +1,326 @@
+# HG changeset patch
+# User kbarrett
+# Date 1516649266 18000
+#      Mon Jan 22 14:27:46 2018 -0500
+# Node ID 08326a76b14888908523cf2bb1105de63b43544d
+# Parent  425504a45630ed682f51fa6881f8dadd283612b5
+8192025: Less referential references
+Reviewed-by: coleenp, eosterlund, mchung, ahgross, rhalade
+
+diff --git openjdk/hotspot/src/share/vm/classfile/javaClasses.cpp openjdk/hotspot/src/share/vm/classfile/javaClasses.cpp
+--- openjdk/hotspot/src/share/vm/classfile/javaClasses.cpp
++++ openjdk/hotspot/src/share/vm/classfile/javaClasses.cpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -2679,6 +2679,32 @@
+   *offset = value;
+ }
+ 
++// Support for java_lang_ref_ReferenceQueue
++
++oop java_lang_ref_ReferenceQueue::NULL_queue() {
++  InstanceKlass* ik = InstanceKlass::cast(SystemDictionary::ReferenceQueue_klass());
++  oop mirror = ik->java_mirror();
++  return mirror->obj_field(static_NULL_queue_offset);
++}
++
++oop java_lang_ref_ReferenceQueue::ENQUEUED_queue() {
++  InstanceKlass* ik = InstanceKlass::cast(SystemDictionary::ReferenceQueue_klass());
++  oop mirror = ik->java_mirror();
++  return mirror->obj_field(static_ENQUEUED_queue_offset);
++}
++
++void java_lang_ref_ReferenceQueue::compute_offsets() {
++  Klass* k = SystemDictionary::ReferenceQueue_klass();
++  compute_offset(static_NULL_queue_offset,
++                 k,
++                 vmSymbols::referencequeue_null_name(),
++                 vmSymbols::referencequeue_signature());
++  compute_offset(static_ENQUEUED_queue_offset,
++                 k,
++                 vmSymbols::referencequeue_enqueued_name(),
++                 vmSymbols::referencequeue_signature());
++}
++
+ // Support for java_lang_invoke_DirectMethodHandle
+ 
+ int java_lang_invoke_DirectMethodHandle::_member_offset;
+@@ -3197,6 +3223,8 @@
+ int java_lang_ref_Reference::static_lock_offset;
+ int java_lang_ref_Reference::static_pending_offset;
+ int java_lang_ref_Reference::number_of_fake_oop_fields;
++int java_lang_ref_ReferenceQueue::static_NULL_queue_offset;
++int java_lang_ref_ReferenceQueue::static_ENQUEUED_queue_offset;
+ int java_lang_ref_SoftReference::timestamp_offset;
+ int java_lang_ref_SoftReference::static_clock_offset;
+ int java_lang_ClassLoader::parent_offset;
+@@ -3378,6 +3406,8 @@
+   if (JDK_Version::is_jdk18x_version())
+     java_lang_reflect_Parameter::compute_offsets();
+ 
++  java_lang_ref_ReferenceQueue::compute_offsets();
++
+   // generated interpreter code wants to know about the offsets we just computed:
+   AbstractAssembler::update_delayed_values();
+ }
+diff --git openjdk/hotspot/src/share/vm/classfile/javaClasses.hpp openjdk/hotspot/src/share/vm/classfile/javaClasses.hpp
+--- openjdk/hotspot/src/share/vm/classfile/javaClasses.hpp
++++ openjdk/hotspot/src/share/vm/classfile/javaClasses.hpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -929,6 +929,12 @@
+   static HeapWord* discovered_addr(oop ref) {
+     return ref->obj_field_addr<HeapWord>(discovered_offset);
+   }
++  static inline oop queue(oop ref) {
++    return ref->obj_field(queue_offset);
++  }
++  static inline void set_queue(oop ref, oop value) {
++    return ref->obj_field_put(queue_offset, value);
++  }
+   // Accessors for statics
+   static oop  pending_list_lock();
+   static oop  pending_list();
+@@ -962,6 +968,20 @@
+ };
+ 
+ 
++// Interface to java.lang.ref.ReferenceQueue objects
++
++class java_lang_ref_ReferenceQueue: public AllStatic {
++public:
++  static int static_NULL_queue_offset;
++  static int static_ENQUEUED_queue_offset;
++
++  // Accessors
++  static oop NULL_queue();
++  static oop ENQUEUED_queue();
++
++  static void compute_offsets();
++};
++
+ // Interface to java.lang.invoke.MethodHandle objects
+ 
+ class MethodHandleEntry;
+diff --git openjdk/hotspot/src/share/vm/classfile/systemDictionary.cpp openjdk/hotspot/src/share/vm/classfile/systemDictionary.cpp
+--- openjdk/hotspot/src/share/vm/classfile/systemDictionary.cpp
++++ openjdk/hotspot/src/share/vm/classfile/systemDictionary.cpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -1927,6 +1927,8 @@
+   InstanceKlass::cast(WK_KLASS(PhantomReference_klass))->set_reference_type(REF_PHANTOM);
+   InstanceKlass::cast(WK_KLASS(Cleaner_klass))->set_reference_type(REF_CLEANER);
+ 
++  initialize_wk_klasses_through(WK_KLASS_ENUM_NAME(ReferenceQueue_klass), scan, CHECK);
++
+   // JSR 292 classes
+   WKID jsr292_group_start = WK_KLASS_ENUM_NAME(MethodHandle_klass);
+   WKID jsr292_group_end   = WK_KLASS_ENUM_NAME(VolatileCallSite_klass);
+diff --git openjdk/hotspot/src/share/vm/classfile/systemDictionary.hpp openjdk/hotspot/src/share/vm/classfile/systemDictionary.hpp
+--- openjdk/hotspot/src/share/vm/classfile/systemDictionary.hpp
++++ openjdk/hotspot/src/share/vm/classfile/systemDictionary.hpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -130,6 +130,7 @@
+   do_klass(PhantomReference_klass,                      java_lang_ref_PhantomReference,            Pre                 ) \
+   do_klass(Cleaner_klass,                               sun_misc_Cleaner,                          Pre                 ) \
+   do_klass(Finalizer_klass,                             java_lang_ref_Finalizer,                   Pre                 ) \
++  do_klass(ReferenceQueue_klass,                        java_lang_ref_ReferenceQueue,              Pre                 ) \
+                                                                                                                          \
+   do_klass(Thread_klass,                                java_lang_Thread,                          Pre                 ) \
+   do_klass(ThreadGroup_klass,                           java_lang_ThreadGroup,                     Pre                 ) \
+diff --git openjdk/hotspot/src/share/vm/classfile/vmSymbols.hpp openjdk/hotspot/src/share/vm/classfile/vmSymbols.hpp
+--- openjdk/hotspot/src/share/vm/classfile/vmSymbols.hpp
++++ openjdk/hotspot/src/share/vm/classfile/vmSymbols.hpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -81,6 +81,7 @@
+   template(java_lang_ref_PhantomReference,            "java/lang/ref/PhantomReference")           \
+   template(sun_misc_Cleaner,                          "sun/misc/Cleaner")                         \
+   template(java_lang_ref_Finalizer,                   "java/lang/ref/Finalizer")                  \
++  template(java_lang_ref_ReferenceQueue,              "java/lang/ref/ReferenceQueue")             \
+   template(java_lang_reflect_AccessibleObject,        "java/lang/reflect/AccessibleObject")       \
+   template(java_lang_reflect_Method,                  "java/lang/reflect/Method")                 \
+   template(java_lang_reflect_Constructor,             "java/lang/reflect/Constructor")            \
+@@ -417,6 +418,8 @@
+   template(getProtectionDomain_name,                  "getProtectionDomain")                      \
+   template(getProtectionDomain_signature,             "(Ljava/security/CodeSource;)Ljava/security/ProtectionDomain;") \
+   template(url_code_signer_array_void_signature,      "(Ljava/net/URL;[Ljava/security/CodeSigner;)V") \
++  template(referencequeue_null_name,                  "NULL")                                     \
++  template(referencequeue_enqueued_name,              "ENQUEUED")                                 \
+                                                                                                   \
+   /* non-intrinsic name/signature pairs: */                                                       \
+   template(register_method_name,                      "register")                                 \
+@@ -508,6 +511,7 @@
+   template(class_signature,                           "Ljava/lang/Class;")                                        \
+   template(string_signature,                          "Ljava/lang/String;")                                       \
+   template(reference_signature,                       "Ljava/lang/ref/Reference;")                                \
++  template(referencequeue_signature,                  "Ljava/lang/ref/ReferenceQueue;")                           \
+   template(executable_signature,                      "Ljava/lang/reflect/Executable;")                           \
+   template(concurrenthashmap_signature,               "Ljava/util/concurrent/ConcurrentHashMap;")                 \
+   template(String_StringBuilder_signature,            "(Ljava/lang/String;)Ljava/lang/StringBuilder;")            \
+diff --git openjdk/hotspot/src/share/vm/oops/klass.cpp openjdk/hotspot/src/share/vm/oops/klass.cpp
+--- openjdk/hotspot/src/share/vm/oops/klass.cpp
++++ openjdk/hotspot/src/share/vm/oops/klass.cpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -48,6 +48,19 @@
+ #include "gc_implementation/parallelScavenge/psScavenge.hpp"
+ #endif // INCLUDE_ALL_GCS
+ 
++bool Klass::is_cloneable() const {
++  return _access_flags.is_cloneable() ||
++         is_subtype_of(SystemDictionary::Cloneable_klass());
++}
++
++void Klass::set_is_cloneable() {
++  if (oop_is_instance() && InstanceKlass::cast(this)->reference_type() != REF_NONE) {
++    // Reference cloning should not be intrinsified and always happen in JVM_Clone.
++  } else {
++    _access_flags.set_is_cloneable();
++  }
++}
++
+ void Klass::set_name(Symbol* n) {
+   _name = n;
+   if (_name != NULL) _name->increment_refcount();
+diff --git openjdk/hotspot/src/share/vm/oops/klass.hpp openjdk/hotspot/src/share/vm/oops/klass.hpp
+--- openjdk/hotspot/src/share/vm/oops/klass.hpp
++++ openjdk/hotspot/src/share/vm/oops/klass.hpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -582,8 +582,8 @@
+   bool has_final_method() const         { return _access_flags.has_final_method(); }
+   void set_has_finalizer()              { _access_flags.set_has_finalizer(); }
+   void set_has_final_method()           { _access_flags.set_has_final_method(); }
+-  bool is_cloneable() const             { return _access_flags.is_cloneable(); }
+-  void set_is_cloneable()               { _access_flags.set_is_cloneable(); }
++  bool is_cloneable() const;
++  void set_is_cloneable();
+   bool has_vanilla_constructor() const  { return _access_flags.has_vanilla_constructor(); }
+   void set_has_vanilla_constructor()    { _access_flags.set_has_vanilla_constructor(); }
+   bool has_miranda_methods () const     { return access_flags().has_miranda_methods(); }
+diff --git openjdk/hotspot/src/share/vm/prims/jvm.cpp openjdk/hotspot/src/share/vm/prims/jvm.cpp
+--- openjdk/hotspot/src/share/vm/prims/jvm.cpp
++++ openjdk/hotspot/src/share/vm/prims/jvm.cpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -38,6 +38,7 @@
+ #include "gc_interface/collectedHeap.inline.hpp"
+ #include "interpreter/bytecode.hpp"
+ #include "memory/oopFactory.hpp"
++#include "memory/referenceType.hpp"
+ #include "memory/universe.inline.hpp"
+ #include "oops/fieldStreams.hpp"
+ #include "oops/instanceKlass.hpp"
+@@ -90,6 +91,10 @@
+ # include "jvm_bsd.h"
+ #endif
+ 
++#if INCLUDE_ALL_GCS
++#include "gc_implementation/g1/g1SATBCardTableModRefBS.hpp"
++#endif // INCLUDE_ALL_GCS
++
+ #include <errno.h>
+ 
+ #ifndef USDT2
+@@ -578,6 +583,28 @@
+ JVM_END
+ 
+ 
++static void fixup_cloned_reference(ReferenceType ref_type, oop src, oop clone) {
++  // If G1 is enabled then we need to register a non-null referent
++  // with the SATB barrier.
++#if INCLUDE_ALL_GCS
++  if (UseG1GC) {
++    oop referent = java_lang_ref_Reference::referent(clone);
++    if (referent != NULL) {
++      G1SATBCardTableModRefBS::enqueue(referent);
++    }
++  }
++#endif // INCLUDE_ALL_GCS
++  if ((java_lang_ref_Reference::next(clone) != NULL) ||
++      (java_lang_ref_Reference::queue(clone) == java_lang_ref_ReferenceQueue::ENQUEUED_queue())) {
++    // If the source has been enqueued or is being enqueued, don't
++    // register the clone with a queue.
++    java_lang_ref_Reference::set_queue(clone, java_lang_ref_ReferenceQueue::NULL_queue());
++  }
++  // discovered and next are list links; the clone is not in those lists.
++  java_lang_ref_Reference::set_discovered(clone, NULL);
++  java_lang_ref_Reference::set_next(clone, NULL);
++}
++
+ JVM_ENTRY(jobject, JVM_Clone(JNIEnv* env, jobject handle))
+   JVMWrapper("JVM_Clone");
+   Handle obj(THREAD, JNIHandles::resolve_non_null(handle));
+@@ -603,12 +630,17 @@
+   }
+ 
+   // Make shallow object copy
++  ReferenceType ref_type = REF_NONE;
+   const int size = obj->size();
+   oop new_obj_oop = NULL;
+   if (obj->is_array()) {
+     const int length = ((arrayOop)obj())->length();
+     new_obj_oop = CollectedHeap::array_allocate(klass, size, length, CHECK_NULL);
+   } else {
++    ref_type = InstanceKlass::cast(klass())->reference_type();
++    assert((ref_type == REF_NONE) ==
++           !klass->is_subclass_of(SystemDictionary::Reference_klass()),
++           "invariant");
+     new_obj_oop = CollectedHeap::obj_allocate(klass, size, CHECK_NULL);
+   }
+ 
+@@ -632,6 +664,12 @@
+   assert(bs->has_write_region_opt(), "Barrier set does not have write_region");
+   bs->write_region(MemRegion((HeapWord*)new_obj_oop, size));
+ 
++  // If cloning a Reference, set Reference fields to a safe state.
++  // Fixup must be completed before any safepoint.
++  if (ref_type != REF_NONE) {
++    fixup_cloned_reference(ref_type, obj(), new_obj_oop);
++  }
++
+   Handle new_obj(THREAD, new_obj_oop);
+   // Special handling for MemberNames.  Since they contain Method* metadata, they
+   // must be registered so that RedefineClasses can fix metadata contained in them.

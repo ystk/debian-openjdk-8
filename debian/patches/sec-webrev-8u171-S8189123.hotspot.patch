@@ -1,0 +1,76 @@
+# HG changeset patch
+# User hseigel
+# Date 1510150632 18000
+#      Wed Nov 08 09:17:12 2017 -0500
+# Node ID 55990d3e4c5e883a94b663da0eb929f198ef3470
+# Parent  efda392b711e852a9ae1334456792227cd3813b2
+8189123: More consistent classloading
+Reviewed-by: acorn, ahgross, rhalade
+Contributed-by: harold.seigel@oracle.com
+
+diff --git openjdk/hotspot/src/share/vm/classfile/verificationType.cpp openjdk/hotspot/src/share/vm/classfile/verificationType.cpp
+--- openjdk/hotspot/src/share/vm/classfile/verificationType.cpp
++++ openjdk/hotspot/src/share/vm/classfile/verificationType.cpp
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2003, 2016, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -63,6 +63,7 @@
+         name(), Handle(THREAD, klass->class_loader()),
+         Handle(THREAD, klass->protection_domain()), true, CHECK_false);
+     KlassHandle this_class(THREAD, obj);
++    klass->class_loader_data()->record_dependency(obj, CHECK_false);
+ 
+     if (this_class->is_interface() && (!from_field_is_protected ||
+         from.name() != vmSymbols::java_lang_Object())) {
+@@ -74,6 +75,7 @@
+       Klass* from_class = SystemDictionary::resolve_or_fail(
+           from.name(), Handle(THREAD, klass->class_loader()),
+           Handle(THREAD, klass->protection_domain()), true, CHECK_false);
++      klass->class_loader_data()->record_dependency(from_class, CHECK_false);
+       bool result = InstanceKlass::cast(from_class)->is_subclass_of(this_class());
+       if (result && DumpSharedSpaces) {
+         if (klass()->is_subclass_of(from_class) && klass()->is_subclass_of(this_class())) {
+diff --git openjdk/hotspot/src/share/vm/classfile/verifier.cpp openjdk/hotspot/src/share/vm/classfile/verifier.cpp
+--- openjdk/hotspot/src/share/vm/classfile/verifier.cpp
++++ openjdk/hotspot/src/share/vm/classfile/verifier.cpp
+@@ -1949,9 +1949,11 @@
+   oop loader = current_class()->class_loader();
+   oop protection_domain = current_class()->protection_domain();
+ 
+-  return SystemDictionary::resolve_or_fail(
++  Klass* kls = SystemDictionary::resolve_or_fail(
+     name, Handle(THREAD, loader), Handle(THREAD, protection_domain),
+     true, CHECK_NULL);
++  current_class()->class_loader_data()->record_dependency(kls, CHECK_NULL);
++  return kls;
+ }
+ 
+ bool ClassVerifier::is_protected_access(instanceKlassHandle this_class,
+diff --git openjdk/hotspot/src/share/vm/prims/jvm.cpp openjdk/hotspot/src/share/vm/prims/jvm.cpp
+--- openjdk/hotspot/src/share/vm/prims/jvm.cpp
++++ openjdk/hotspot/src/share/vm/prims/jvm.cpp
+@@ -24,6 +24,7 @@
+ 
+ #include "precompiled.hpp"
+ #include "classfile/classLoader.hpp"
++#include "classfile/classLoaderData.inline.hpp"
+ #include "classfile/classLoaderExt.hpp"
+ #include "classfile/javaAssertions.hpp"
+ #include "classfile/javaClasses.hpp"
+@@ -952,6 +953,12 @@
+   Handle h_prot  (THREAD, protection_domain);
+   jclass result = find_class_from_class_loader(env, h_name, init, h_loader,
+                                                h_prot, true, thread);
++  if (result != NULL) {
++    oop mirror = JNIHandles::resolve_non_null(result);
++    Klass* to_class = java_lang_Class::as_Klass(mirror);
++    ClassLoaderData* cld = ClassLoaderData::class_loader_data(h_loader());
++    cld->record_dependency(to_class, CHECK_NULL);
++  }
+ 
+   if (TraceClassResolution && result != NULL) {
+     // this function is generally only used for class loading during verification.

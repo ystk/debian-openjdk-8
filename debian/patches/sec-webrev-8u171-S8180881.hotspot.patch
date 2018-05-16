@@ -1,0 +1,32 @@
+# HG changeset patch
+# User robm
+# Date 1509133162 -3600
+#      Fri Oct 27 20:39:22 2017 +0100
+# Node ID 3b6d2d60ff750ddb032099a1e3ebe84355ad2435
+# Parent  1310ecbe61f3931fca2c4ec68f920105833aeacd
+8180881: Better packaging of deserialization
+Reviewed-by: chegar, acorn
+
+diff --git openjdk/hotspot/src/share/vm/prims/jvm.cpp openjdk/hotspot/src/share/vm/prims/jvm.cpp
+--- openjdk/hotspot/src/share/vm/prims/jvm.cpp
++++ openjdk/hotspot/src/share/vm/prims/jvm.cpp
+@@ -3654,15 +3654,16 @@
+ JVM_END
+ 
+ 
+-// Return the first non-null class loader up the execution stack, or null
+-// if only code from the null class loader is on the stack.
++// Returns first non-privileged class loader on the stack (excluding reflection
++// generated frames) or null if only classes loaded by the boot class loader
++// and extension class loader are found on the stack.
+ 
+ JVM_ENTRY(jobject, JVM_LatestUserDefinedLoader(JNIEnv *env))
+   for (vframeStream vfst(thread); !vfst.at_end(); vfst.next()) {
+     // UseNewReflection
+     vfst.skip_reflection_related_frames(); // Only needed for 1.4 reflection
+     oop loader = vfst.method()->method_holder()->class_loader();
+-    if (loader != NULL) {
++    if (loader != NULL && !SystemDictionary::is_ext_class_loader(loader)) {
+       return JNIHandles::make_local(env, loader);
+     }
+   }

@@ -1,8 +1,44 @@
-openjdk-8 (8u162-b12-1~bpo8+1) jessie-backports; urgency=medium
+openjdk-8 (8u171-b11-1~bpo8+1) jessie-backports; urgency=medium
 
   * Rebuild for jessie-backports.
 
- -- Moritz Muehlenhoff <moritz@wikimedia.org>  Fri, 16 Mar 2018 13:40:52 +0000
+ -- Moritz Muehlenhoff <moritz@wikimedia.org>  Fri, 04 May 2018 08:02:55 +0000
+
+openjdk-8 (8u171-b11-1) unstable; urgency=high
+
+  [ Tiago Stürmer Daitx ]
+  * Update to 8u171-b11. Hotspot 8u162-b12 for aarch32 with 8u171-b10 hotspot
+    security fixes and 8u171-b10 for aarch64.
+    - CVE-2018-2790,S8189969: Manifest better manifest entries.
+    - CVE-2018-2795,S8189977: Improve permission portability.
+    - CVE-2018-2796,S8189981: Improve queuing portability.
+    - CVE-2018-2797,S8189985: Improve tabular data portability.
+    - CVE-2018-2798,S8189989: Improve container portability.
+    - CVE-2018-2799,S8189993: Improve document portability.
+    - CVE-2018-2794,S8189997: Enhance keystore mechanisms.
+    - CVE-2018-2814,S8192025: Less referential references.
+    - CVE-2018-2815,S8192757: Improve stub classes implementation.
+    - CVE-2018-2800,S8193833: Better RMI connection support.
+    - S8169080: Improve documentation examples for crypto applications.
+    - S8180881: Better packaging of deserialization.
+    - S8182362: Update CipherOutputStream Usage.
+    - S8189123: More consistent classloading.
+    - S8190478: Improved interface method selection.
+    - S8190877: Better handling of abstract classes.
+    - S8191696: Better mouse positioning.
+    - S8192030: Better MTSchema support.
+    - S8193409: Improve AES supporting classes.
+    - S8193414: Improvements in MethodType lookups.
+  * d/p/aarch64-hotspot-8u162-b12.patch: removed, tarball has been updated to
+    8u171-b10.
+  * d/p/hotspot-S8185723-zero-ppc32-atomic_copy64-fix.patch,
+    d/p/hotspot-S8201509-zero-s390x-atomic_copy64-fix.patch: fix ppc32, s390x
+    javac segmentation fault caused by wrong inline assembler.
+
+  [ Matthias Klose ]
+  * Bump standards version.
+
+ -- Matthias Klose <doko@ubuntu.com>  Fri, 27 Apr 2018 08:56:10 +0200
 
 openjdk-8 (8u162-b12-1) unstable; urgency=high
 

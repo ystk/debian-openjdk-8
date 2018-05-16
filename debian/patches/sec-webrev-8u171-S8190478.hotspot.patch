@@ -1,0 +1,33 @@
+# HG changeset patch
+# User hseigel
+# Date 1512498309 18000
+#      Tue Dec 05 13:25:09 2017 -0500
+# Node ID 07275619e52e978e014f491f48823abd11ac870e
+# Parent  48900d625d6631d482f1c724a415f5f68cc57908
+8190478: Improved interface method selection
+Reviewed-by: acorn, ahgross, jwilhelm, rhalade
+Contributed-by: harold.seigel@oracle.com
+
+diff --git openjdk/hotspot/src/share/vm/oops/cpCache.cpp openjdk/hotspot/src/share/vm/oops/cpCache.cpp
+--- openjdk/hotspot/src/share/vm/oops/cpCache.cpp
++++ openjdk/hotspot/src/share/vm/oops/cpCache.cpp
+@@ -226,14 +226,13 @@
+       // virtual method in java.lang.Object. This is a corner case in the spec
+       // but is presumably legal. javac does not generate this code.
+       //
+-      // We set bytecode_1() to _invokeinterface, because that is the
+-      // bytecode # used by the interpreter to see if it is resolved.
++      // We do not set bytecode_1() to _invokeinterface, because that is the
++      // bytecode # used by the interpreter to see if it is resolved.  In this
++      // case, the method gets reresolved with caller for each interface call
++      // because the actual selected method may not be public.
++      //
+       // We set bytecode_2() to _invokevirtual.
+       // See also interpreterRuntime.cpp. (8/25/2000)
+-      // Only set resolved for the invokeinterface case if method is public.
+-      // Otherwise, the method needs to be reresolved with caller for each
+-      // interface call.
+-      if (method->is_public()) set_bytecode_1(invoke_code);
+     } else {
+       assert(invoke_code == Bytecodes::_invokevirtual, "");
+     }

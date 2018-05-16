@@ -15,7 +15,7 @@ Build-Depends: debhelper (>= 9), quilt, m4, lsb-release, zip, unzip,
   libnss3-dev (>= 2:3.17.1),
   mauve, jtreg, xvfb, xauth, xfonts-base, libgl1-mesa-dri [!x32], twm | metacity, twm | dbus-x11, x11-xkb-utils,
   time, 
-Standards-Version: 4.1.3
+Standards-Version: 4.1.4
 Homepage: http://openjdk.java.net/
 Vcs-Bzr: http://bazaar.launchpad.net/~openjdk/openjdk/openjdk8
 Vcs-Browser: https://code.launchpad.net/~openjdk/openjdk/openjdk8

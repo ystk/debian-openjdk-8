@@ -380,6 +380,8 @@ COMMON_PATCHES = \
 	jdk-i18n-pt_BR.diff \
 	jdk-java-nio-bits-unligned-aarch64.diff \
 	jdk-S8165852-overlayfs.patch \
+	hotspot-S8185723-zero-ppc32-atomic_copy64-fix.patch \
+	hotspot-S8201509-zero-s390x-atomic_copy64-fix.patch \
 
 ifeq ($(derivative),Debian)
   COMMON_PATCHES += \
@@ -446,13 +448,16 @@ ifneq (,$(filter $(DEB_HOST_ARCH), kfreebsd-amd64 kfreebsd-i386))
 	kfreebsd-support-hotspot.diff
 endif
 
-# apply 8u162-b12 hotspot patches to aarch64
-ifneq (,$(filter $(DEB_HOST_ARCH),$(hotspot_aarch64_archs)))
+# apply zero hotspot fix to aarch32
+# apply 8u171-b10 security update patches to aarch32
+ifneq (,$(filter $(DEB_HOST_ARCH), $(hotspot_aarch32_archs)))
   COMMON_PATCHES += \
-	aarch64-hotspot-8u162-b12.diff
-else
-  COMMON_PATCHES += \
-	zero-hotspot-S819432.patch
+	zero-hotspot-S819432.patch \
+	sec-webrev-8u171-S8180881.hotspot.patch \
+	sec-webrev-8u171-S8189123.hotspot.patch \
+	sec-webrev-8u171-S8190478.hotspot.patch \
+	sec-webrev-8u171-S8190877.hotspot.patch \
+	sec-webrev-8u171-S8192025.hotspot.patch
 endif
 
 DEFAULT_PATCHES = \
@@ -2202,14 +2207,14 @@ endif
 is_release		=
 is_release		= yes
 hg_project		= jdk8u
-hg_tag			= jdk8u162-b12
+hg_tag			= jdk8u171-b11
 package_version		= $(subst jdk,,$(hg_tag))
 ifneq ($(is_release),yes)
   package_version	:= $(subst -,~,$(package_version))
 endif
 hg_url			= http://hg.openjdk.java.net/jdk8u/$(hg_project)
 hg_project_aarch64	= jdk8u
-hg_tag_aarch64		= aarch64-jdk8u161-b16
+hg_tag_aarch64		= aarch64-jdk8u171-b10
 hg_url_aarch64		= http://hg.openjdk.java.net/aarch64-port/$(hg_project_aarch64)
 hg_project_aarch32	= jdk8u
 hg_tag_aarch32		= jdk8u162-b12-aarch32-180220
