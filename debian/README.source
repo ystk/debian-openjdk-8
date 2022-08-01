@@ -1,0 +1,65 @@
+Content of source package
+=========================
+
+"openjdk-8" is a composite source package:
+- Multiple tarballs from each Oracle mercurial repositories :
+  corba / hotspot / jaxp / jaxws / jdk-dfsg / langtools / openjdk
+  including Nashorn
+- IcedTea sound support
+- Debian packaging scripts and patches.
+
+Building a new OpenJDK-8 Debian package
+=======================================
+
+Use debian/rules get-orig to download the new upstream sources
+after adjusting hg_tag etc. in debian/rules to point to the
+desired upstream versions and tags.
+
+Support for DEB_BUILD_OPTIONS
+=============================
+
+As described in Debian Policy §4.9.1, current package's debian/rules support
+the standardised environment variable DEB_BUILD_OPTIONS. This variable can
+contain several flags to change how a package is compiled and built.
+
+  * nocheck: don't run jtreg test suites.
+  * nodocs: pass --disable-docs to IcedTea configure script, which
+            disable Javadoc generation.
+  * nostrip: debugging symbols should not be stripped from the
+             binary during installation
+  * parallel=X: package should be built using up to X parallel processes
+  * noaltzero: don't build alternative Zero VM.
+  * noaltshark: don't build alternative Shark VM.
+
+Sample usage:
+DEB_BUILD_OPTIONS="parallel=5 nocheck" debuild -i"(\.hg|\.bzr)"
+
+ Build with 5 parallel processes and don't run jtreg test suites.
+
+This also work with cowbuilder/pbuilder:
+DEB_BUILD_OPTIONS="parallel=5 nocheck" pdebuild -i"(\.hg|\.bzr)" --logfile ../build.log --pbuilder cowbuilder
+
+Test failures
+=============
+
+In older releases (stretch, xenial, and anything before), it is
+often not worth the delay to run the tests at all. Reasons for
+test failures are:
+
+• jasm, jcoder, etc. missing: there is no Debian package for
+  https://wiki.openjdk.java.net/display/CodeTools/asmtools
+  at all, despite jtreg officially depending on it (all releases)
+
+• jtreg doesn’t know @comment which is used in some tests (old releases)
+
+• java.lang.NoClassDefFoundError: com/google/common/primitives/Ints
+  in testng (old releases)
+
+If this wasn’t in maintenance mode I’d suggest packaging asmtools,
+probably with /usr/bin/jasm and friends, B-Ding on it for sid,
+testing the hell out of this for sid, rebuild the same code for
+older releases hoping/praying things will work there. Perhaps even
+fixing testng plus backporting @comment to jtreg…?
+
+But, as things are, best to ignore all test failures and assume(…)
+upstream know what they do :/

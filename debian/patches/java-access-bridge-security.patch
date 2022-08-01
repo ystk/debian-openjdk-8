@@ -1,0 +1,13 @@
+# patch only used for builds with java-access-bridge support
+
+--- a/jdk/src/share/lib/security/java.security-linux
++++ b/jdk/src/share/lib/security/java.security-linux
+@@ -218,6 +218,8 @@ package.access=sun.,\
+                com.oracle.xmlns.internal.,\
+                com.oracle.webservices.internal.,\
+                oracle.jrockit.jfr.,\
++               org.GNOME.Accessibility.,\
++               org.GNOME.Bonobo.,\
+                org.jcp.xml.dsig.internal.,\
+                jdk.internal.,\
+                jdk.nashorn.internal.,\

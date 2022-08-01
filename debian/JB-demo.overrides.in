@@ -1,0 +1,15 @@
+# OpenJDK is correct despite any Debian policy
+@basename@-demo binary: unknown-java-class-version
+
+# example jar file with sources and documentation
+@basename@-demo binary: codeless-jar
+
+# not a problem in these specific cases
+@basename@-demo binary: duplicate-files
+@basename@-demo binary: repeated-path-segment
+
+# this is basically this package’s purpose
+@basename@-demo binary: package-contains-documentation-outside-usr-share-doc
+
+# these aren’t easily compatible with doc-base
+@basename@-demo binary: possible-documentation-but-no-doc-base-registration
