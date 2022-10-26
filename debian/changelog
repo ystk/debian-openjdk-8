@@ -1,18 +1,42 @@
-openjdk-8 (8u342-b07-1~deb8u1) jessie-security; urgency=medium
+openjdk-8 (8u352-ga-1~deb8u1) jessie-security; urgency=medium
 
   [ Thorsten Glaser ]
-  * Disable tests (fail on old releases, cf. debian/README.source)
-  * Build for (wtf) wheezy, (ELTS) jessie, stretch, (wtf) buster,
-    bullseye and (PPA) trusty, xenial, bionic, focal, jammy
-  * Effort sponsored by ⮡ tarent
+   * Disable tests (fail on old releases, cf. debian/README.source)
+   * Build for (wtf) wheezy, (ELTS) jessie, stretch, (wtf) buster,
+     bullseye and (PPA) trusty, xenial, bionic, focal, jammy
+   * Effort sponsored by ⮡ tarent
 
   [ Emilio Pozuelo Monfort ]
-  * Make openjdk-8 the default Java version, following the change
-    in java-common 0.52+deb8u1. This bumps Java 8's priority in
+  * Make openjdk-8 the default Java version in jessie, following the
+    change in java-common 0.52+deb8u1. This bumps Java 8's priority in
     the alternatives system. Make sure update-alternatives is called
     for installed versions with priority lower than the new one.
+  * Bootstrap on armhf by building with openjdk-7.
 
- -- Emilio Pozuelo Monfort <pochu@debian.org>  Mon, 25 Jul 2022 19:21:15 +0200
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Wed, 26 Oct 2022 08:19:46 +0200
+
+openjdk-8 (8u352-ga-1) unstable; urgency=medium
+
+  * Update GCC for bookworm/sid and kinetic-proposed from 11 to 12
+    to match default system compiler (this needs testing as people
+    report early issues in other distros)
+  * New upstream release
+  * Security fixes:
+    - JDK-8282252: Improve BigInteger/Decimal validation
+    - JDK-8285662: Better permission resolution
+    - JDK-8286511: Improve macro allocation
+    - JDK-8286519: Better memory handling
+    - JDK-8286526, CVE-2022-21619: Improve NTLM support
+    - JDK-8286533, CVE-2022-21626: Key X509 usages
+    - JDK-8286910, CVE-2022-21624: Improve JNDI lookups
+    - JDK-8286918, CVE-2022-21628: Better HttpServer service
+    - JDK-8288508: Enhance ECDSA usage
+  * Other changes see
+    https://mail.openjdk.org/pipermail/jdk8u-dev/2022-October/015706.html
+  * Drop applied patches
+  * Upload sponsored by ⮡ tarent
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Thu, 20 Oct 2022 18:11:04 +0200
 
 openjdk-8 (8u342-b07-1) unstable; urgency=medium
 

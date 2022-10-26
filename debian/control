@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Java Maintenance <debian-java@lists.debian.org>
 Uploaders: Thorsten Glaser <tg@mirbsd.de>
 Build-Depends: debhelper (>= 9), quilt, m4, lsb-release, zip, unzip,
-  openjdk-8-jdk,
+  openjdk-8-jdk [!armhf], openjdk-7-jdk [armhf],
   sharutils, gawk, cpio, pkg-config, procps, wdiff, tzdata,
    time,
   autoconf (>= 2.69), automake, autotools-dev, ant, ant-optional, fastjar (>= 2:0.96-0ubuntu2),
