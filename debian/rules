@@ -100,10 +100,10 @@ shortver	= 8
 is_release		=
 is_release		= yes
 gh_project		= jdk8u
-gh_tag			= jdk8u352-ga
+gh_tag			= jdk8u362-ga
 version_dash_buildnr	= $(subst ${gh_project},,${gh_tag})
-version_dash_buildnr	= 352-b08
-gh_tag_aarch32		= jdk8u352-ga-aarch32-20221020
+version_dash_buildnr	= 362-b09
+gh_tag_aarch32		= jdk8u362-ga-aarch32-20230119
 #gh_tag_aarch64		= aarch64-shenandoah-jdk8u322-b06
 package_version		= $(subst jdk,,${gh_tag})
 ifneq ($(is_release),yes)
@@ -656,7 +656,7 @@ else
   bd_autotools = autoconf (>= 2.69), automake, autotools-dev,
 endif
 bd_bootstrap += \
-	openjdk-8-jdk [!armhf], openjdk-7-jdk [armhf],
+	openjdk-8-jdk,
 #	openjdk-8-jdk | openjdk-7-jdk,
 ifeq (,$(filter $(distrel),squeeze wheezy jessie precise trusty))
 bd_cross += \
@@ -998,6 +998,7 @@ packaging-files:
 	      -e 's/@archdir@/$(archdir)/g' \
 	      -e 's/@tag@/$(tag)/g' \
 	      -e 's/@priority@/$(priority)/g' \
+	      -e 's/@is_default@/$(is_default)/g' \
 	      -e 's/@mantag@/$(mantag)/g' \
 	      -e 's/@multiarch@/$(DEB_HOST_MULTIARCH)/g' \
 	      -e 's/@jre_hl_tools@/$(jre_hl_tools_alt)/g' \
