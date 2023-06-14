@@ -1,9 +1,78 @@
-openjdk-8 (8u362-ga-1~deb8u1) jessie-security; urgency=medium
+openjdk-8 (8u372-ga-1~deb8u1) jessie-security; urgency=medium
 
   * Backport to jessie.
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Thu, 25 May 2023 10:39:24 +0200
+
+openjdk-8 (8u372-ga-1~deb9u1) stretch-security; urgency=medium
+
+  * Rebuild for stretch.
   * Disable the test suite.
 
- -- Emilio Pozuelo Monfort <pochu@debian.org>  Tue, 31 Jan 2023 13:24:41 +0100
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Thu, 25 May 2023 10:14:32 +0200
+
+openjdk-8 (8u372-ga-1) unstable; urgency=medium
+
+  [ Thorsten Glaser ]
+  * B-D and test-depend on libasmtools-java where applicable
+
+  [ John Paul Adrian Glaubitz ]
+  * Fix sh4 FTBFS
+
+  [ Emilio Pozuelo Monfort ]
+  * New upstream release.
+  * Security fixes:
+    - JDK-8287404: Improve ping times
+    - JDK-8288436: Improve Xalan supports
+    - JDK-8294474, CVE-2023-21930: Better AES support
+    - JDK-8295304, CVE-2023-21938: Runtime support improvements
+    - JDK-8296496, JDK-8292652: large memory allocation in sizecalc.h
+    - JDK-8296676, JDK-8296622: Improve String platform support
+    - JDK-8296684, JDK-8296692, JDK-8296700, CVE-2023-21937:
+      Improve String platform support
+    - JDK-8296832, CVE-2023-21939: Improve Swing platform support
+    - JDK-8297371: Improve UTF8 representation redux
+    - JDK-8298191, CVE-2023-21954: Enhance object reclamation process
+    - JDK-8298310, CVE-2023-21967: Enhance TLS session negotiation
+    - JDK-8298667, CVE-2023-21968: Improved path handling
+    - JDK-8299129: Enhance NameService lookups
+  * For other changes see
+    https://mail.openjdk.org/pipermail/jdk8u-dev/2023-April/017039.html
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Wed, 10 May 2023 10:45:58 +0200
+
+openjdk-8 (8u362-ga-4) unstable; urgency=medium
+
+  * Revert blhc warning quieting, the buildsystem has bugs
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Wed, 01 Feb 2023 18:14:37 +0100
+
+openjdk-8 (8u362-ga-3) unstable; urgency=medium
+
+  * Use compat 10, not 11 as openjdk-11/17 do: 11 is deprecated
+    in favour of either 10 or 12
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Wed, 01 Feb 2023 17:46:44 +0100
+
+openjdk-8 (8u362-ga-2) unstable; urgency=medium
+
+  * Drop shark VM build glue: documented to just crash; depends on
+    ancient LLVM version; no way forward, dropped upstream
+  * Drop kfreebsd-*, as the patches have needed updating and fixing
+    for years, and the architectures are, sadly, in a bad state
+  * Disable -Werror where not yet done (SCTP): it breaks ia64 (and
+    possibly elsewhere) as this old code is not adapted to newer
+    glibcs of bookworm/sid, etc.
+  * Fix a sparc64 build error patching around GCC deficiency
+  * Switch to jtreg6 for the testsuite, on distros that package it
+  * Transition libfreetype6-dev → libfreetype-dev (where applicable)
+  * Bump Policy, (on recent releases only) debhelper compat
+  * Try to appease changes in lintian override formats
+  * Limit tzdata-java Breaks to exactly stretch and xenial
+  * Plug a few build warnings
+  * Build -Os not -O3 on mipsel, cf. #971018 for this workaround idea
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Wed, 01 Feb 2023 17:23:02 +0100
 
 openjdk-8 (8u362-ga-1) unstable; urgency=medium
 

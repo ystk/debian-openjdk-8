@@ -53,7 +53,7 @@ hotspot_aarch32_archs = armhf
 hotspot_aarch64_archs =
 
 hotspot_archs	= amd64 i386 arm64 ppc64 ppc64el sparc64 \
-	$(hotspot_aarch32_archs) kfreebsd-amd64 kfreebsd-i386
+	$(hotspot_aarch32_archs)
 jtreg_archs	= $(hotspot_archs) alpha armel armhf \
 		  ia64 mips mipsel mips64 mips64el powerpc \
 		  powerpcspe ppc64 ppc64el s390x sh4 x32
@@ -62,10 +62,6 @@ bootcycle_build  = $(if $(filter $(DEB_HOST_ARCH), $(hotspot_archs)),yes)
 ifneq ($(DEB_HOST_ARCH),$(DEB_BUILD_ARCH))
   bootcycle_build  =
 endif
-
-shark_archs	= amd64 i386 kfreebsd-amd64 kfreebsd-i386
-# Shark build but just crash
-shark_archs	=
 
 ifneq (,$(filter $(distrel),lucid precise quantal raring saucy trusty utopic vivid wily lenny etch squeeze wheezy))
   is_default = no
@@ -87,9 +83,6 @@ basename	= openjdk-$(shortver)
 ifneq (,$(filter $(DEB_HOST_ARCH), $(hotspot_archs)))
   priority	= $(if $(filter yes, $(is_default)),1081,1069)
   vm_name	= Hotspot JIT
-else ifneq (,$(filter $(DEB_HOST_ARCH), $(shark_archs)))
-  priority	= $(if $(filter yes, $(is_default)),1075,1065)
-  vm_name	= Hotspot Shark
 else
   priority	= $(if $(filter yes, $(is_default)),1074,1063)
   vm_name	= Hotspot Zero
@@ -100,10 +93,10 @@ shortver	= 8
 is_release		=
 is_release		= yes
 gh_project		= jdk8u
-gh_tag			= jdk8u362-ga
+gh_tag			= jdk8u372-ga
 version_dash_buildnr	= $(subst ${gh_project},,${gh_tag})
-version_dash_buildnr	= 362-b09
-gh_tag_aarch32		= jdk8u362-ga-aarch32-20230119
+version_dash_buildnr	= 372-b07
+gh_tag_aarch32		= jdk8u372-ga-aarch32-20230426
 #gh_tag_aarch64		= aarch64-shenandoah-jdk8u322-b06
 package_version		= $(subst jdk,,${gh_tag})
 ifneq ($(is_release),yes)
@@ -156,9 +149,6 @@ endif
 with_check = disabled for this build
 
 with_docs = $(if $(findstring nodoc, $(DEB_BUILD_OPTIONS)),,yes)
-ifneq (,$(findstring shark, $(PKGSOURCE)))
-  with_docs = disabled for shark
-endif
 
 arch_map	:= alpha=alpha arm=arm armel=arm armhf=arm arm64=aarch64 amd64=amd64 hppa=parisc i386=i586 m68k=m68k mips=mips mipsel=mipsel mips64=mips64 mips64el=mips64el powerpc=ppc powerpcspe=ppc ppc64=ppc64 ppc64el=ppc64le sparc=sparc sparc64=sparcv9 sh4=sh s390x=s390x ia64=ia64 x32=x32
 archdir_map	:= alpha=alpha arm=arm armel=arm armhf=arm arm64=aarch64 amd64=amd64 hppa=parisc i386=i386 m68k=m68k mips=mips mipsel=mipsel mips64=mips64 mips64el=mips64el powerpc=ppc powerpcspe=ppc ppc64=ppc64 ppc64el=ppc64le sparc=sparc sparc64=sparcv9 sh4=sh s390x=s390x ia64=ia64 x32=x32
@@ -184,30 +174,21 @@ ifneq (,$(filter $(DEB_HOST_ARCH),$(hotspot_aarch32_archs)))
   hotspot_version = aarch32
 endif
 
-any_archs = alpha amd64 armel ${hotspot_aarch32_archs} arm64 i386 ia64 mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el m68k sh4 sparc sparc64 s390x x32 kfreebsd-i386 kfreebsd-amd64
+any_archs = alpha amd64 armel ${hotspot_aarch32_archs} arm64 i386 ia64 mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el m68k sh4 sparc sparc64 s390x x32
 
 ifneq (,$(filter $(distrel),xenial))
   transitional_jamvm_pkg = yes
 endif
 
-altshark_archs = powerpc ppc64 ppc64el
-# Shark build but just crash
-altshark_archs =
-
 # Don't build zero alternate vm on Trusty
 ifeq (,$(filter $(distrel),trusty))
-  altzero_archs = $(filter-out sparc, $(hotspot_archs)) $(altshark_archs)
+  altzero_archs = $(filter-out sparc, $(hotspot_archs))
 endif
 
-ifeq (,$(filter noaltzero, $(DEB_BUILD_OPTIONS))$(filter noaltshark, $(DEB_BUILD_OPTIONS)))
+ifeq (,$(filter noaltzero, $(DEB_BUILD_OPTIONS)))
   ifneq (,$(filter $(DEB_HOST_ARCH), $(altzero_archs)))
-    ifneq (,$(filter $(DEB_HOST_ARCH), $(shark_archs) $(altshark_archs)))
-      alternate_vms += shark
-      zero_dir = shark
-    else
       alternate_vms += zero
       zero_dir = zero
-    endif
   endif
 endif
 
@@ -317,6 +298,13 @@ endif
 export OPT_CFLAGS/cppInterpreter_arm.o
 endif
 
+# mipsel has “Error: branch out of range” Assembler messages
+# mips64el does not yet, but may be affected, add here then
+ifneq (,$(filter $(DEB_HOST_ARCH), mipsel))
+OPT_CFLAGS_DEFAULT=SIZE
+export OPT_CFLAGS_DEFAULT
+endif
+
 with_pulse = yes
 ifneq (,$(filter $(DEB_HOST_ARCH), alpha))
   with_pulse =
@@ -356,7 +344,9 @@ endif
 
 COMMON_PATCHES = \
 	autoconf-select.diff \
-	hotspot-warn-no-errformat.diff \
+	bootstrap-with-8.diff \
+	build-warnings.diff \
+	disable-werror.diff \
 	aarch64.diff \
 	hotspot-set-compiler.diff \
 	ppc64el.diff \
@@ -377,7 +367,6 @@ COMMON_PATCHES = \
 	default-jvm-cfg-default.diff \
 	disable-doclint-by-default.diff \
 	pass-extra-flags.diff \
-	hotspot-disable-werror.diff \
 	workaround_expand_exec_shield_cs_limit.diff \
 	zero-architectures.diff \
 	adlc-parser.patch \
@@ -409,6 +398,7 @@ endif
 COMMON_PATCHES += \
 	dnd-files.patch \
 	zero-x32.diff \
+	sparc-inline-conflict.diff \
 
 ifeq (,$(filter $(DEB_HOST_ARCH),$(hotspot_aarch64_archs) $(hotspot_aarch32_archs)))
   COMMON_PATCHES += \
@@ -443,12 +433,6 @@ ZERO_PATCHES = \
 
 CONFIGURE_ARGS =
 
-# GNU/kFreeBSD don't support epoll syscall so don't try to check of it.
-# FIXME need to check the flag, configure complains about it
-#ifneq (,$(filter $(DEB_HOST_ARCH), kfreebsd-amd64 kfreebsd-i386))
-#  CONFIGURE_ARGS += --disable-compile-against-syscalls
-#endif
-
 # there are problems --with-alt-jar=/usr/bin/fastjar,
 # see http://icedtea.classpath.org/bugzilla/show_bug.cgi?id=217
 # only use it for zero ports except powerpc (which we assume as
@@ -464,9 +448,6 @@ endif
 
 ifeq (,$(filter $(DEB_HOST_ARCH), $(hotspot_archs)))
   CONFIGURE_ARGS += --enable-zero
-  ifneq (,$(filter $(DEB_HOST_ARCH), $(shark_archs)))
-    CONFIGURE_ARGS += --enable-shark
-  endif
 endif
 
 EXTRA_BUILD_ENV += MAKE_VERBOSE=y QUIETLY= LOG=debug
@@ -663,15 +644,40 @@ bd_cross += \
 	openjdk-8-jdk-headless <cross>, dpkg-dev (>= 1.17.14),
 endif
 
-ifeq ($(with_check),yes)
+# for the testsuite
 bd_check = \
 	xvfb@nocheck@, xauth@nocheck@, xfonts-base@nocheck@, \
-	libgl1-mesa-dri [!x32]@nocheck@, xfwm4@nocheck@, \
+	libgl1-mesa-dri@nocheck@, xfwm4@nocheck@, \
 	x11-xkb-utils@nocheck@, dbus-x11@nocheck@, \
-	jtreg@nocheck@, testng@nocheck@, \
 	openjdk-8-jre-headless@nocheck@ | default-jre-headless (>= 2:1.8)@nocheck@,
+dtd_check =
+ifeq (,$(filter $(distrel),squeeze wheezy jessie stretch lucid precise quantal raring saucy trusty utopic vivid wily xenial yakkety zesty artful cosmic disco eoan groovy hirsute impish))
+  bd_check += jtreg6@nocheck@,
+  dtd_check += jtreg6,
 else
+  bd_check += jtreg@nocheck@,
+  dtd_check += jtreg,
+endif
+ifeq (,$(filter $(distrel),squeeze wheezy jessie stretch buster bullseye bookworm lucid precise quantal raring saucy trusty utopic vivid wily xenial yakkety zesty artful bionic cosmic disco eoan focal groovy hirsute impish jammy kinetic))
+  bd_check += libasmtools-java@nocheck@,
+  dtd_check += libasmtools-java,
+endif
+# trailing comma for bd_check but not dtd_check
+bd_check += testng@nocheck@,
+dtd_check += testng
+# elide B-D if known to not test
+ifneq ($(with_check),yes)
 bd_check =
+endif
+
+ifneq (,$(filter $(distrel),squeeze wheezy jessie stretch lucid precise quantal raring saucy trusty utopic vivid wily xenial yakkety zesty artful))
+  old_debhelper = veryold
+  bd_debhelper = debhelper (>= 9),
+  dh_compat = 9
+else
+  old_debhelper = no
+  bd_debhelper = debhelper (>= 11),
+  dh_compat = 10
 endif
 
 # This section should be in sync with "CC/CXX" definition
@@ -717,8 +723,13 @@ bd_syslibs += \
 	libgif-dev,
 bd_openjdk = \
 	libxtst-dev, libxi-dev, libxt-dev, libxaw7-dev, libxrender-dev, libcups2-dev, \
-	libasound2-dev, liblcms2-dev, libfreetype6-dev (>= 2.2.1), \
+	libasound2-dev, liblcms2-dev, \
 	libxinerama-dev, libkrb5-dev, xsltproc, libpcsclite-dev,
+ifneq (,$(filter $(distrel),squeeze wheezy jessie stretch buster lucid precise quantal raring saucy trusty utopic vivid wily xenial yakkety zesty artful bionic cosmic disco eoan))
+  bd_openjdk += libfreetype6-dev (>= 2.2.1),
+else
+  bd_openjdk += libfreetype-dev,
+endif
 #ifneq (,$(filter $(distrel),wheezy xenial artful))
   bd_openjdk += libgtk2.0-dev,
 #else
@@ -734,26 +745,6 @@ bd_zero = \
 
 ifeq (,$(filter $(distrel),precise wheezy))
   nocheck_profile = <!nocheck>
-endif
-
-ifneq (,$(shark_archs))
-  bd_zero = $(pkg_ffidev),
-  ifneq (,$(filter $(distrel),lucid))
-    bd_shark = llvm-dev (>= 2.7) [$(foreach a,$(shark_archs) $(altshark_archs),$(a))],
-    bd_shark += oprofile [$(foreach a,$(shark_archs) $(altshark_archs),$(a))],
-  else
-    ifneq (,$(filter $(distrel),squeeze))
-      llvm_suffix = -2.7
-    else ifneq (,$(filter $(distrel),precise))
-      llvm_suffix = -2.9
-    else
-      llvm_suffix = -3.0
-    endif
-    bd_shark = llvm$(llvm_suffix)-dev [$(foreach a,$(shark_archs) $(altshark_archs),$(a))],
-    ifneq (,$(filter $(DEB_HOST_ARCH),$(shark_archs) $(altshark_archs)))
-      CONFIGURE_ARGS += --with-llvm-config=llvm-config$(llvm_suffix)
-    endif
-  endif
 endif
 
 ifneq (,$(filter $(distrel),lucid))
@@ -892,14 +883,7 @@ else ifneq (,$(with_bridge))
 endif
 
 ifeq (,$(filter $(DEB_HOST_ARCH), $(hotspot_archs)))
-  ifneq (,$(filter $(DEB_HOST_ARCH), $(shark_archs)))
-    control_vars += '-Vdefaultvm:Provides=$(p_jre)-zero, $(p_jre)-shark'
-  else
     control_vars += '-Vdefaultvm:Provides=$(p_jre)-zero'
-  endif
-endif
-ifneq (,$(filter $(DEB_HOST_ARCH), $(shark_archs) $(altshark_archs)))
-  control_vars += '-Vzerovm:Provides=$(p_jre)-shark'
 endif
 
 pkg_certs = ca-certificates-java
@@ -922,7 +906,7 @@ ifeq (,$(filter $(distrel), precise trusty))
 endif
 # break on tzdata-java for stretch, see #857992
 # required when upgrading from jessie to stretch
-ifeq (,$(filter $(distrel), wheezy jessie trusty))
+ifneq (,$(filter $(distrel), stretch xenial))
   jrehl_breaks += tzdata-java
 endif
 
@@ -930,13 +914,19 @@ pkg_jcommon = java-common (>= 0.28)
 control_vars += '-Vjcommon:Depends=$(pkg_jcommon)'
 
 debian/control: debian/control.in debian/rules
+	@cp -p debian/tests/control debian/tests/control.old
 	@cp -p debian/control debian/control.old
+	echo $(dh_compat) >debian/compat
+	sed \
+	      -e 's/@dtd_check@/$(strip $(dtd_check))/g' \
+	    debian/tests/control.in >debian/tests/control
 	sed \
 	      -e 's/@basename@/$(basename)/g' \
 	      -e 's/@bd_autotools@/$(bd_autotools)/g' \
 	      -e 's/@bd_bootstrap@/$(strip $(bd_bootstrap))/g' \
 	      -e 's/@bd_check@/$(strip $(bd_check))/g' \
 	      -e 's/@bd_cross@/$(strip $(bd_cross))/g' \
+	      -e 's/@bd_debhelper@/$(strip $(bd_debhelper))/g' \
 	      -e 's/@bd_openjdk@/$(bd_openjdk)/g' \
 	      -e 's/@bd_zero@/$(bd_zero)/g' \
 	      -e 's/@bd_gcc@/$(bd_gcc)/g' \
@@ -945,7 +935,6 @@ debian/control: debian/control.in debian/rules
 	      -e 's/@bd_pulsejava@/$(bd_pulsejava)/g' \
 	      -e 's/@bd_nss@/$(bd_nss)/g' \
 	      -e 's/@bd_systemtap@/$(bd_systemtap)/g' \
-	      -e 's/@bd_shark@/$(bd_shark)/g' \
 	      -e 's/@bd_ant@/$(bd_ant)/g' \
 	      -e 's/@bd_tzdata@/$(bd_tzdata)/g' \
 	      -e 's/@core_fonts@/$(core_fonts)/g' \
@@ -959,12 +948,15 @@ debian/control: debian/control.in debian/rules
 	    $(if $(altzero_archs), debian/control.zero-jre) \
 	    $(if $(DEB_HOST_MULTIARCH),,| grep -v '^Multi-Arch') \
 		> debian/control
-	@if cmp -s debian/control debian/control.old; then \
-	  rm -f debian/control.old; \
+	@if cmp -s debian/control debian/control.old && \
+	    cmp -s debian/tests/control debian/tests/control.old; then \
+	  rm -f debian/tests/control.old debian/control.old; \
 	else \
+	  echo; echo === BEGIN DIFF ===; echo; \
+	  diff -u debian/tests/control.old debian/tests/control | wdiff -d -; \
 	  diff -u debian/control.old debian/control | wdiff -d -; \
 	  echo "debian/control did change, please restart the build"; \
-	  rm -f debian/control.old; \
+	  rm -f debian/tests/control.old debian/control.old; \
 	  exit 1; \
 	fi
 
@@ -1147,14 +1139,6 @@ ifeq ($(with_check),yes)
       with_jtreg_check = $(default_vm)
     endif
 
-    ifneq (,$(filter shark, $(alternate_vms)))
-      # shark hangs on ppc64
-      ifneq (,$(filter $(DEB_HOST_ARCH), amd64 i386 powerpc powerpcspe))
-	# only activate after testing; hangs several tests.
-	with_jtreg_check += $(if $(filter $(DEB_HOST_ARCH),$(altshark_archs)),shark,zero)
-      endif
-    endif
-
     ifneq (,$(filter zero, $(alternate_vms)))
       ifneq (,$(filter $(DEB_HOST_ARCH), arm64 amd64 i386))
 	# only activate after testing; hangs several tests.
@@ -1176,13 +1160,6 @@ build_stamps +=  stamps/jtreg-check-default
 ifeq (0,1)
 build_stamps +=  stamps/jtreg-check-default
 build_stamps += $(if $(filter zero, $(alternate_vms)),stamps/jtreg-check-zero)
-ifneq (,$(filter shark, $(alternate_vms)))
-  ifneq (,$(filter $(DEB_HOST_ARCH),$(altshark_archs)))
-    build_stamps += stamps/jtreg-check-shark
-  else
-    build_stamps += stamps/jtreg-check-zero
-  endif
-endif
 endif
 
 pre-build:
@@ -1201,7 +1178,7 @@ build: pre-build $(build_stamps)
 	rm -f buildwatch.pid
 
 stamps/build: stamps/configure
-ifneq (,$(filter $(DEB_HOST_ARCH), alpha armel armhf ia64 m68k mips mipsel mips64 mips64el powerpc powerpcspe s390x sparc sparc64))
+ifneq (,$(filter $(DEB_HOST_ARCH), alpha armel armhf ia64 m68k mips mipsel mips64 mips64el powerpc powerpcspe s390x sh4 sparc sparc64))
 	sh -c 'sh debian/buildwatch.sh $(CURDIR)/$(builddir) &'
 endif
 	if $(EXTRA_BUILD_ENV) $(MAKE) -C $(builddir) $(build_target); then \
@@ -1232,11 +1209,6 @@ stamps/build-docs: stamps/build
 stamps/jtreg-check-default: stamps/build
 	$(MAKE) -f debian/rules jtreg-run-check VMNAME=$(default_vm) VMARGS= \
 		$(if $(filter $(default_vm),hotspot),TEST_SUITES='hotspot langtools jdk',TEST_SUITES='hotspot langtools')
-	touch $@
-
-stamps/jtreg-check-shark: stamps/build
-	$(MAKE) -f debian/rules jtreg-run-check VMNAME=shark VMARGS='-vmoption:-shark' \
-		TEST_SUITES='hotspot langtools'
 	touch $@
 
 stamps/jtreg-check-zero: stamps/build
@@ -1372,12 +1344,6 @@ ifeq ($(with_pulse),yes)
 	  $(d)/$(basedir)/jre/lib/$(archdir)/.
 endif
 
-ifneq (,$(filter $(DEB_HOST_ARCH), kfreebsd-amd64 kfreebsd-i386))
-	cp -a $(d)/$(basedir)/include/bsd $(d)/$(basedir)/include/linux
-	: # Easy fix for #851053
-	mv $(d)/$(basedir)/jre/lib/$(archdir)/jspawnhelper $(d)/$(basedir)/jre/lib/
-endif
-
 	chmod -R u+w $(d)
 
 	: # use javaws from icedtea-netx
@@ -1482,7 +1448,7 @@ endif
 	done
 	mv $(d)/$(basedir)/jre/lib/$(archdir)/jvm.cfg \
 		$(d)/$(etcdir)/
-ifneq (,$(filter shark zero,$(alternate_vms)))
+ifneq (,$(filter zero,$(alternate_vms)))
 	# a zero alternate vm was build
 	printf -- '-zero KNOWN\n' >> $(d)/$(etcdir)/jvm.cfg
 else ifeq (,$(filter $(DEB_HOST_ARCH),$(hotspot_archs)))
@@ -1560,7 +1526,7 @@ endif
 	for i in $(basedir)/jre/lib/$(archdir)/*; do \
 	  case "$$i" in \
 	    */libjavagtk.so|*/libsplashscreen.so|*/libjsoundalsa.so|$(if $(with_pulse),*/libicedtea-sound.so|)*/xawt) echo $$i >> ../$(p_jre).install;; \
-	    */zero|*/shark) echo $$i >> ../$(p_jrez).install;; \
+	    */zero) echo $$i >> ../$(p_jrez).install;; \
 	    *) echo $$i >> ../$(p_jrehl).install; \
 	  esac; \
 	done
@@ -1672,7 +1638,12 @@ ifneq (,$(wildcard $(d)/$(basedir)/jre/lib/$(archdir)/*.debuginfo))
 	) > debian/$(p_dbg).install
 endif
 
+ifneq (,$(findstring old, $(old_debhelper)))
 	dh_install --sourcedir=debian/tmp --fail-missing -XLICENSE -Xrelease
+else
+	dh_install --sourcedir=debian/tmp -XLICENSE -Xrelease
+	dh_missing --sourcedir=debian/tmp --fail-missing -XLICENSE -Xrelease
+endif
 
 	find $(d_jrehl) $(d_jre) $(d_jrez) $(d_jrej) -type f \
 	  \( -name '*.debuginfo' -o -name '*.diz' \) -print | xargs -r rm -f
@@ -1752,7 +1723,7 @@ endif
 	  echo usr/share/doc/$(p_jrehl) usr/share/doc/$(p_jre); \
 	) > $(d_jre).links
 
-ifneq (,$(filter shark zero, $(alternate_vms)))
+ifneq (,$(filter zero, $(alternate_vms)))
 	: # create docdir symlinks for $(p_jrez)
 	( \
 	  echo usr/share/doc/$(p_jrehl) usr/share/doc/$(p_jrez); \
@@ -1864,7 +1835,7 @@ ifeq ($(with_systemtap),yes FIXME)
 endif
 
 	: # OpenJDK Stack Unwinder and Frame Decorator
-ifneq (,$(filter $(DEB_HOST_ARCH),amd64 kfreebsd-amd64))
+ifneq (,$(filter $(DEB_HOST_ARCH),amd64))
 	mkdir -p $(d_jrehl)/usr/share/gdb/auto-load/$(basedir)/jre/lib/$(archdir)/server
 	cp debian/dbg8.py \
 	  $(d_jrehl)/usr/share/gdb/auto-load/$(basedir)/jre/lib/$(archdir)/server/libjvm.so-gdb.py
@@ -1892,7 +1863,7 @@ endif
 	done
 
 nodocs = $(if $(findstring nodoc, $(DEB_BUILD_OPTIONS)),-N$(p_doc))
-nojrez = $(if $(filter shark zero, $(alternate_vms)),,-N$(p_jrez))
+nojrez = $(if $(filter zero, $(alternate_vms)),,-N$(p_jrez))
 
 # Build architecture independant packages
 binary-indep: build stamps/build-docs install
