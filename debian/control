@@ -1,16 +1,16 @@
 Source: openjdk-8
 Section: java
 Priority: optional
-Maintainer: Java Maintenance <debian-java@lists.debian.org>
+Maintainer: Java Maintenance <pkg-java-maintainers@lists.alioth.debian.org>
 Uploaders: Thorsten Glaser <tg@mirbsd.de>
 Build-Depends: debhelper (>= 9), quilt, m4, lsb-release, zip, unzip,
   openjdk-8-jdk,
   sharutils, gawk, cpio, pkg-config, procps, wdiff, tzdata,
    time,
   autoconf (>= 2.69), automake, autotools-dev, ant, ant-optional, fastjar (>= 2:0.96-0ubuntu2),
-  g++-4.9, libxtst-dev, libxi-dev, libxt-dev, libxaw7-dev, libxrender-dev, libcups2-dev, libasound2-dev, liblcms2-dev, libxinerama-dev, libkrb5-dev, xsltproc, libpcsclite-dev, libfreetype6-dev (>= 2.2.1), libgtk2.0-dev, libffi-dev,
-  zlib1g-dev, libattr1-dev, libpng-dev, libjpeg-dev, libgif-dev, libpulse-dev (>= 0.9.12) [!alpha], systemtap-sdt-dev [!sh4],
-  libnss3-dev (>= 2:3.17.1), 
+  gcc-4.9, g++-4.9, libxtst-dev, libxi-dev, libxt-dev, libxaw7-dev, libxrender-dev, libcups2-dev, libasound2-dev, liblcms2-dev, libxinerama-dev, libkrb5-dev, xsltproc, libpcsclite-dev, libfreetype6-dev (>= 2.2.1), libgtk2.0-dev, libffi-dev,
+  zlib1g-dev, libattr1-dev, libpng12-dev, libjpeg62-turbo-dev, libgif-dev, libpulse-dev (>= 0.9.12) [!alpha], systemtap-sdt-dev,
+  libnss3-dev (>= 2:3.26), 
 Standards-Version: 4.6.2
 Homepage: http://openjdk.java.net/
 VCS-git: https://evolvis.org/anonscm/git/alioth/openjdk-8.git -b master
@@ -50,7 +50,7 @@ Depends: ${jredefault:Depends}, ${cacert:Depends},
 Recommends: ${dlopenhl:Recommends}
 Suggests: libnss-mdns,
   fonts-dejavu-extra,
-  fonts-ipafont-gothic, fonts-ipafont-mincho, fonts-wqy-microhei, fonts-wqy-zenhei, fonts-indic,
+  fonts-nanum, fonts-ipafont-gothic, fonts-ipafont-mincho, fonts-wqy-microhei, fonts-wqy-zenhei, fonts-indic,
 Provides: java-runtime-headless, java2-runtime-headless,
   java5-runtime-headless, java6-runtime-headless,
   java7-runtime-headless, java8-runtime-headless,

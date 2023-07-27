@@ -96,7 +96,7 @@ Last-Update: 2023-01-29
  
 --- a/jdk/make/CopyFiles.gmk
 +++ b/jdk/make/CopyFiles.gmk
-@@ -328,9 +328,15 @@ else
+@@ -333,9 +333,15 @@ else
    ifeq ($(CLIENT_AND_SERVER), true)
      COPY_JVM_CFG_FILE := true
    else
