@@ -4,20 +4,20 @@ Priority: optional
 Maintainer: Java Maintenance <pkg-java-maintainers@lists.alioth.debian.org>
 Uploaders: Thorsten Glaser <tg@mirbsd.de>
 Build-Depends: debhelper (>= 9), quilt, m4, lsb-release, zip, unzip,
-  openjdk-8-jdk,
-  sharutils, gawk, cpio, pkg-config, procps, wdiff, tzdata,
-   time,
-  autoconf (>= 2.69), automake, autotools-dev, ant, ant-optional, fastjar (>= 2:0.96-0ubuntu2),
+  openjdk-8-jdk-headless,
+  sharutils, gawk, cpio, procps, wdiff, tzdata,
+  xvfb <!nocheck>, xauth <!nocheck>, xfonts-base <!nocheck>, libgl1-mesa-dri <!nocheck>, xfwm4 <!nocheck>, x11-xkb-utils <!nocheck>, dbus-x11 <!nocheck>, openjdk-8-jre-headless <!nocheck> | default-jre-headless (>= 2:1.8) <!nocheck>, jtreg (>> 4.2-b13-1~) <!nocheck>, testng <!nocheck>, time,
+  autoconf (>= 2.69), automake, pkg-config, autotools-dev, ant, ant-optional, fastjar (>= 2:0.96-0ubuntu2),
   gcc-4.9, g++-4.9, libxtst-dev, libxi-dev, libxt-dev, libxaw7-dev, libxrender-dev, libcups2-dev, libasound2-dev, liblcms2-dev, libxinerama-dev, libkrb5-dev, xsltproc, libpcsclite-dev, libfreetype6-dev (>= 2.2.1), libgtk2.0-dev, libffi-dev,
-  zlib1g-dev, libattr1-dev, libpng12-dev, libjpeg-dev, libgif-dev, libpulse-dev (>= 0.9.12) [!alpha], systemtap-sdt-dev,
+  zlib1g-dev, libattr1-dev, libpng12-dev, libjpeg-dev, libgif-dev, libcups2, libglib2.0-0 (>= 2.24), libgtk2.0-0 (>= 2.14), libpulse-dev (>= 0.9.12), systemtap-sdt-dev,
   libnss3-dev (>= 2:3.26), 
 Standards-Version: 4.6.2
-Homepage: http://openjdk.java.net/
+Homepage: https://openjdk.org/projects/jdk8u/
 VCS-git: https://evolvis.org/anonscm/git/alioth/openjdk-8.git -b master
 VCS-Browser: https://evolvis.org/plugins/scmgit/cgi-bin/gitweb.cgi?p=alioth/openjdk-8.git;a=shortlog;h=refs/heads/master
 
 Package: openjdk-8-jdk-headless
-Architecture: alpha amd64 armel armhf arm64 i386 ia64 mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el m68k sh4 sparc sparc64 s390x x32
+Architecture: alpha amd64 arm64 armel armhf i386 ia64 loong64 m68k mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el s390x sh4 sparc sparc64 x32
 Multi-Arch: same
 Pre-Depends: ${dpkg:Depends}
 Depends: openjdk-8-jre-headless (= ${binary:Version}),
@@ -40,7 +40,7 @@ Description: OpenJDK Development Kit (JDK) (headless)
  from the IcedTea project.
 
 Package: openjdk-8-jre-headless
-Architecture: alpha amd64 armel armhf arm64 i386 ia64 mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el m68k sh4 sparc sparc64 s390x x32
+Architecture: alpha amd64 arm64 armel armhf i386 ia64 loong64 m68k mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el s390x sh4 sparc sparc64 x32
 Multi-Arch: same
 Pre-Depends: ${dpkg:Depends}
 Depends: ${jredefault:Depends}, ${cacert:Depends},
@@ -65,7 +65,7 @@ Description: OpenJDK Java runtime, using ${vm:Name} (headless)
  from the IcedTea project.
 
 Package: openjdk-8-jdk
-Architecture: alpha amd64 armel armhf arm64 i386 ia64 mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el m68k sh4 sparc sparc64 s390x x32
+Architecture: alpha amd64 arm64 armel armhf i386 ia64 loong64 m68k mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el s390x sh4 sparc sparc64 x32
 Multi-Arch: same
 Pre-Depends: ${dpkg:Depends}
 Depends: openjdk-8-jre (= ${binary:Version}),
@@ -86,7 +86,7 @@ Description: OpenJDK Development Kit (JDK)
  from the IcedTea project.
 
 Package: openjdk-8-jre
-Architecture: alpha amd64 armel armhf arm64 i386 ia64 mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el m68k sh4 sparc sparc64 s390x x32
+Architecture: alpha amd64 arm64 armel armhf i386 ia64 loong64 m68k mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el s390x sh4 sparc sparc64 x32
 Multi-Arch: same
 Pre-Depends: ${dpkg:Depends}
 Depends: openjdk-8-jre-headless (= ${binary:Version}),
@@ -106,7 +106,7 @@ Description: OpenJDK Java runtime, using ${vm:Name}
  from the IcedTea project.
 
 Package: openjdk-8-demo
-Architecture: alpha amd64 armel armhf arm64 i386 ia64 mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el m68k sh4 sparc sparc64 s390x x32
+Architecture: alpha amd64 arm64 armel armhf i386 ia64 loong64 m68k mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el s390x sh4 sparc sparc64 x32
 Pre-Depends: ${dpkg:Depends}
 Depends: openjdk-8-jre (= ${binary:Version}),
   ${shlibs:Depends}, ${misc:Depends}
@@ -150,7 +150,7 @@ Description: OpenJDK Development Kit (JDK) documentation
  from the IcedTea project.
 
 Package: openjdk-8-dbg
-Architecture: alpha amd64 armel armhf arm64 i386 ia64 mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el m68k sh4 sparc sparc64 s390x x32
+Architecture: alpha amd64 arm64 armel armhf i386 ia64 loong64 m68k mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el s390x sh4 sparc sparc64 x32
 Multi-Arch: same
 Section: debug
 Pre-Depends: ${dpkg:Depends}
@@ -168,7 +168,7 @@ Description: Java runtime based on OpenJDK (debugging symbols)
  from the IcedTea project.
 
 Package: openjdk-8-jre-zero
-Architecture: amd64 i386 arm64 ppc64 ppc64el sparc64 armhf
+Architecture: amd64 arm64 i386 ppc64 ppc64el armhf
 Multi-Arch: same
 Pre-Depends: ${dpkg:Depends}
 Depends: openjdk-8-jre-headless (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}

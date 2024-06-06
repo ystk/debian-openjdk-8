@@ -1,3 +1,149 @@
+openjdk-8 (8u412-ga-1~deb8u1) jessie-security; urgency=medium
+
+  * Backport to jessie.
+  * Enable the test suite.
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Fri, 26 Apr 2024 12:49:36 +0200
+
+openjdk-8 (8u412-ga-1) unstable; urgency=medium
+
+  * New upstream release (Closes: #1069678)
+  * CVEs
+    - CVE-2024-21011
+    - CVE-2024-21085
+    - CVE-2024-21068
+    - CVE-2024-21094
+  * Security fixes
+    - JDK-8317507, JDK-8325348: C2 compilation fails
+      with "Exceeded _node_regs array"
+    - JDK-8318340: Improve RSA key implementations
+    - JDK-8319851: Improve exception logging
+    - JDK-8322114: Improve Pack 200 handling
+    - JDK-8322122: Enhance generation of addresses
+  * Other changes see
+    https://mail.openjdk.org/pipermail/jdk8u-dev/2024-April/018329.html
+  * Upload sponsored by QVEST ⮡ dıgıtal
+  * Re-enable running tests by default except on noble/i386 (lacks prereqs)
+  * Switch from pkg-config to pkgconf for bookworm/mantic+ (lintian)
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Tue, 23 Apr 2024 01:10:58 +0200
+
+openjdk-8 (8u402-ga-8) unstable; urgency=low
+
+  * Boostrap with jdk-headless
+  * Add patch to switch dlsym use to time_t-64 functions if needed
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Sat, 06 Apr 2024 17:27:18 +0200
+
+openjdk-8 (8u402-ga-7) unstable; urgency=low
+
+  * Remove jexec from jinfo to fix update-java-alternatives (LP#2059181)
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Tue, 02 Apr 2024 17:03:49 +0200
+
+openjdk-8 (8u402-ga-6) unstable; urgency=low
+
+  * Build without tests for t64 transition
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Sun, 24 Mar 2024 22:47:14 +0100
+
+openjdk-8 (8u402-ga-5) unstable; urgency=low
+
+  * Switch noble also to libcups2t64
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Tue, 19 Mar 2024 22:43:33 +0100
+
+openjdk-8 (8u402-ga-4) unstable; urgency=medium
+
+  * Switch to a different “random small arch:all package existing
+    only in Debian” for the cups t64 divide check, due to #805988
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Thu, 14 Mar 2024 21:33:20 +0100
+
+openjdk-8 (8u402-ga-3) unstable; urgency=medium
+
+  [ Vladimir Petko ]
+  * Unbreak installability with missing /usr/share/binfmts
+
+  [ Thorsten Glaser, Vladimir Petko ]
+  * Fix coïnstallability for real on focal, jammy, mantic where
+    libatk-wrapper-java-jni:i386 does not exist, by making its
+    absence at run-time into a warning for *only* i386 on affected
+    releases (pre-focal, noble+, Debian aren’t affected)
+    Closes: #1064191, LP#1916327, LP#2053110
+
+  [ Thorsten Glaser ]
+  * Update dlopen dependencies for t64 transition:
+    - libcups2 → libcups2t64 for trixie+ (and >noble?)
+    - libglib2.0-0 → libglib2.0-0t64 for trixie+ and noble+
+    - libgtk2.0-0 → libgtk2.0-0t64 for trixie+ and noble+
+  * Adjust bd_syslibs to ensure right side of the t64 divide
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Wed, 13 Mar 2024 22:46:46 +0100
+
+openjdk-8 (8u402-ga-2) unstable; urgency=low
+
+  * d/rules reliability fixes and extra checks
+  * Patch OpenJDK to pass errorlevel when configure fails
+  * Show config.log if present in such cases
+  * Do not install jexec alternative any more (unlike newer
+    versions it cannot run just any JAR), drop .jar binfmt
+    registration with it (LP#1775785); please use jarwrapper
+  * Restore M-A installability of focal/i386 package (LP#1916327)
+    by adding xenial, bionic, focal, jammy to the list of releases
+    built with the ATK bridge, but not enabling it by default;
+    keep jessie on, stretch and sid and mantic/noble off the list:
+    please report bugs for issues with the bridge, so sthibault
+    can find, debug, fix them
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Wed, 31 Jan 2024 06:05:28 +0100
+
+openjdk-8 (8u402-ga-1~deb8u1) jessie-security; urgency=medium
+
+  * Backport to jessie.
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Mon, 22 Jan 2024 16:12:26 +0100
+
+openjdk-8 (8u402-ga-1) unstable; urgency=low
+
+  [ Leslie Zhai ]
+  * Add openjdk-8 zero support for loong64 (Closes: #1060236)
+
+  [ Thorsten Glaser ]
+  * Merge 8u392-ga-1+sparc64
+  * Drop alpha-float-const.diff, seems no longer needed
+  * Use config.{guess,sub} from autotools-dev for the JDK as well
+    as icedtea-sound; autoreconf the latter; use sh explicitly
+  * Enable pulse for alpha and loong64
+  * New upstream release
+  * CVEs
+    - CVE-2024-20918
+    - CVE-2024-20919
+    - CVE-2024-20921
+    - CVE-2024-20926
+    - CVE-2024-20945
+    - CVE-2024-20952
+  * Security fixes
+    - JDK-8308204: Enhanced certificate processing
+    - JDK-8314284: Enhance Nashorn performance
+    - JDK-8314295: Enhance verification of verifier
+    - JDK-8314307: Improve loop handling
+    - JDK-8314468: Improve Compiler loops
+    - JDK-8316976: Improve signature handling
+    - JDK-8317547: Enhance TLS connection support
+  * Other changes see
+    https://mail.openjdk.org/pipermail/jdk8u-dev/2024-January/017883.html
+  * Upload sponsored by QVEST ⮡ dıgıtal
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Fri, 19 Jan 2024 00:30:27 +0100
+
+openjdk-8 (8u392-ga-1+sparc64) unreleased; urgency=medium
+
+  * Disable Hotspot on sparc64 as it is currently broken
+    (Closes: #1056570)
+
+ -- John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>  Thu, 23 Nov 2023 11:01:30 +0100
+
 openjdk-8 (8u392-ga-1~deb8u1) jessie-security; urgency=medium
 
   * Backport to jessie.

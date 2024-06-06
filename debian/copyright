@@ -41,7 +41,7 @@ Copyright:
 
 OpenJDK:
     Copyright © 1996-2007 Sun Microsystems, Inc.
-    Copyright © 1996-2023 Oracle and/or its affiliates.
+    Copyright © 1996-2024 Oracle and/or its affiliates.
     For third party copyrights see below (copies from the third party readme).
     Portions Copyright © 1993-2014 International Business Machines Corp.
     Portions Copyright © 1999-2005 The Apache Software Foundation
@@ -74,7 +74,7 @@ Java Access Bridge:
 Packaging:
     Copyright © 2007-2014 Canonical Ltd.
     Copyright © 2021, 2022 mirabilos and ⮡ tarent solutions GmbH
-    Copyright © 2023 mirabilos and Qvest Digital AG
+    Copyright © 2023, 2024 mirabilos and Qvest Digital AG
 
 SipHash:
     Copyright © Copyright (c) 2012-2014 Daniel J. Bernstein <djb@cr.yp.to>
