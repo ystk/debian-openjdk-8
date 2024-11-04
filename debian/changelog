@@ -1,3 +1,31 @@
+openjdk-8 (8u432-b06-2~deb8u1) jessie-security; urgency=medium
+
+  * Backport to jessie.
+  * Drop default-jre-headless build-dep, no longer needed.
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Mon, 04 Nov 2024 09:29:58 +0100
+
+openjdk-8 (8u432-b06-2) unstable; urgency=medium
+
+  * Drop b04-to-b05-hotspot.diff, no longer needed. Fixes FTBFS on armhf.
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Sun, 03 Nov 2024 12:33:56 +0100
+
+openjdk-8 (8u432-b06-1) unstable; urgency=medium
+
+  [ Vladimir Petko ]
+  * Include /usr/share/dpkg/buildflags.mk to work around *buntu
+    breaking package builds without it (Closes: #1076752)
+
+  [ Thorsten Glaser ]
+  * Include /usr/share/dpkg/buildflags.mk only if it exists
+  * Set JT_JAVA if needed to not need default-jre-headless
+
+  [ Emilio Pozuelo Monfort ]
+  * New upstream release.
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Fri, 01 Nov 2024 22:24:27 +0100
+
 openjdk-8 (8u422-b05-1~deb8u1) jessie-security; urgency=medium
 
   * Backport to jessie.

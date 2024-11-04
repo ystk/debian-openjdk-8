@@ -3,7 +3,7 @@ Section: java
 Priority: optional
 Maintainer: Java Maintenance <pkg-java-maintainers@lists.alioth.debian.org>
 Uploaders: Thorsten Glaser <tg@mirbsd.de>
-Build-Depends: openjdk-8-jdk, default-jre-headless, debhelper (>= 9), quilt,
+Build-Depends: openjdk-8-jdk, debhelper (>= 9), quilt,
  m4, lsb-release, zip, unzip, sharutils, gawk, cpio, procps, wdiff, tzdata,
  xvfb <!nocheck>, xauth <!nocheck>, xfonts-base <!nocheck>, libgl1-mesa-dri <!nocheck>, xfwm4 <!nocheck>, x11-xkb-utils <!nocheck>, dbus-x11 <!nocheck>, jtreg (>> 4.2-b13-1~) <!nocheck>, testng <!nocheck>, autoconf (>= 2.69), automake, pkg-config, autotools-dev, ant, ant-optional, fastjar (>= 2:0.96-0ubuntu2), gcc-4.9, g++-4.9, libxtst-dev, libxi-dev, libxt-dev, libxaw7-dev, libxrender-dev, libcups2-dev, libasound2-dev, liblcms2-dev, libxinerama-dev, libkrb5-dev, xsltproc, libpcsclite-dev, libfreetype6-dev (>= 2.2.1), libgtk2.0-dev, libffi-dev, zlib1g-dev, libattr1-dev, libpng12-dev, libjpeg-dev, libgif-dev, libcups2, libglib2.0-0 (>= 2.24), libgtk2.0-0 (>= 2.14), libpulse-dev (>= 0.9.12), systemtap-sdt-dev, libnss3-dev (>= 2:3.26),  time
 Standards-Version: 4.6.2
