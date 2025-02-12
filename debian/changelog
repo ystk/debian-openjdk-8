@@ -1,3 +1,27 @@
+openjdk-8 (8u442-ga-1~deb8u1) jessie-security; urgency=medium
+
+  * Backport to jessie.
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Mon, 10 Feb 2025 11:51:03 +0100
+
+openjdk-8 (8u442-ga-1) unstable; urgency=low
+
+  * New upstream release
+  * Other changes see
+    https://mail.openjdk.org/pipermail/jdk8u-dev/2025-January/019658.html
+  * Drop mantic, add plucky
+  * Add pochu to Uploaders
+  * Bump testing/sid GCC to 14 (Closes: #1092660);
+    for oracular/plucky as well, noble is kept at GCC 13
+  * Since xfwm4 is available on every arch we build again, drop exclusion
+  * Drop remnants of IA64 support (long gone from Linux)
+  * Remove m68k support: broken, needs rebootstrapping after the ABI change
+    anyway, at which point openjdk-8 might not be needed at all
+  * Add patch for FTBFS with GCC 14’s strictened types
+  * Bump Policy (nothing to do)
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Mon, 10 Feb 2025 01:11:43 +0100
+
 openjdk-8 (8u432-b06-2~deb8u1) jessie-security; urgency=medium
 
   * Backport to jessie.
@@ -23,6 +47,24 @@ openjdk-8 (8u432-b06-1) unstable; urgency=medium
 
   [ Emilio Pozuelo Monfort ]
   * New upstream release.
+  * CVEs
+    - CVE-2024-21208
+    - CVE-2024-21210
+    - CVE-2024-21217
+    - CVE-2024-21235
+  * Security fixes
+    - JDK-8290367, JDK-8332643: Update default value and extend the scope
+      of com.sun.jndi.ldap.object.trustSerialData system property
+    - JDK-8313626, JDK-8307769: C2 crash due to unexpected
+      exception control flow
+    - JDK-8328286: Enhance HTTP client
+    - JDK-8328544: Improve handling of vectorization
+    - JDK-8328726: Better Kerberos support
+    - JDK-8331446: Improve deserialization support
+    - JDK-8332644: Improve graph optimizations
+    - JDK-8335713: Enhance vectorization analysis
+  * Other changes see
+    https://mail.openjdk.org/pipermail/jdk8u-dev/2024-October/019414.html
 
  -- Emilio Pozuelo Monfort <pochu@debian.org>  Fri, 01 Nov 2024 22:24:27 +0100
 
