@@ -1,3 +1,35 @@
+openjdk-8 (8u452-ga-1~deb8u1) jessie-security; urgency=medium
+
+  * Backport to jessie.
+
+ -- Emilio Pozuelo Monfort <pochu@debian.org>  Mon, 19 May 2025 18:15:49 +0200
+
+openjdk-8 (8u452-ga-1) unstable; urgency=low
+
+  * Revert previous workaround
+  * Use = ipv := for jre_hl_tools gmake variable (Closes: #1095932)
+  * Explicitly use R³:no
+  * New upstream release
+  * CVEs
+    - CVE-2025-21587
+    - CVE-2025-30691
+    - CVE-2025-30698
+  * Other changes see
+    https://mail.openjdk.org/pipermail/jdk8u-dev/2025-April/019989.html
+  * Add Roberto as ELTS fallback for pochu
+  * Bump Policy, (should be) no change needed
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Sun, 11 May 2025 22:09:45 +0000
+
+openjdk-8 (8u442-ga-2) unstable; urgency=low
+
+  * Add explicit R³: binary-targets to work around dpkg 1.22.13 changing
+    default behaviour, violating Policy §5.6.31, leading to binary-*
+    target not called in separate make run any more which some wildcard
+    matches rely on, to get the correct files (Closes: #1095746)
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Wed, 12 Feb 2025 02:55:46 +0100
+
 openjdk-8 (8u442-ga-1~deb8u1) jessie-security; urgency=medium
 
   * Backport to jessie.

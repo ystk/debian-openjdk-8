@@ -40,11 +40,11 @@ Packaging:
 Copyright:
 
 OpenJDK:
-    Copyright © 1996-2007 Sun Microsystems, Inc.
-    Copyright © 1994-2024 Oracle and/or its affiliates.
+    Copyright © 1996–2007 Sun Microsystems, Inc.
+    Copyright © 1994–2025 Oracle and/or its affiliates.
     For third party copyrights see below (copies from the third party readme).
-    Portions Copyright © 1993-2014 International Business Machines Corp.
-    Portions Copyright © 1999-2005 The Apache Software Foundation
+    Portions Copyright © 1993–2014 International Business Machines Corp.
+    Portions Copyright © 1999–2005 The Apache Software Foundation
       (or licenced to the ASF under CLAs).
     Portions Copyright © 2013–2023 Azul Systems, Inc.
     Portions Copyright © 2021 Azul, Inc.
@@ -57,30 +57,30 @@ OpenJDK:
     Portions Copyright © 2019–2020 SAP SE.
     Portions Copyright © 2021 Huawei Technologies Co., Ltd.
     Portions Copyright © 2021 Arm Limited.
-    Portions Copyright © 2022 THL A29 Limited, a Tencent company.
+    Portions Copyright © 2020–2022 THL A29 Limited, a Tencent company.
 
 IcedTea Sound:
-    Portions Copyright © 2008-2014 Red Hat, Inc.
+    Portions Copyright © 2008–2014 Red Hat, Inc.
 
 Java Access Bridge:
-    Portions Copyright © 2002-2007 Bill Haneman <bill.haneman@sun.com>
-    Portions Copyright © 2002-2007 Louise Miller
-    Portions Copyright © 2002-2007 Gergõ Érdi <cactus@cactus.rulez.org>
-    Portions Copyright © 2002-2007 Laszlo (Laca) Peter <laszlo.peter@sun.com>
-    Portions Copyright © 2002-2007 Jeff Cai<jeff.cai@sun.com>
-    Portions Copyright © 2002-2007 George Kraft IV <gk4@us.ibm.com>
-    Portions Copyright © 2002-2007 Padraig O'Briain <padraig.obriain@sun.com>
-    Portions Copyright © 2002-2007 Darren Kenny <darren.kenny@sun.com>
+    Portions Copyright © 2002–2007 Bill Haneman <bill.haneman@sun.com>
+    Portions Copyright © 2002–2007 Louise Miller
+    Portions Copyright © 2002–2007 Gergõ Érdi <cactus@cactus.rulez.org>
+    Portions Copyright © 2002–2007 Laszlo (Laca) Peter <laszlo.peter@sun.com>
+    Portions Copyright © 2002–2007 Jeff Cai<jeff.cai@sun.com>
+    Portions Copyright © 2002–2007 George Kraft IV <gk4@us.ibm.com>
+    Portions Copyright © 2002–2007 Padraig O'Briain <padraig.obriain@sun.com>
+    Portions Copyright © 2002–2007 Darren Kenny <darren.kenny@sun.com>
 
 Packaging:
-    Copyright © 2007-2014 Canonical Ltd.
+    Copyright © 2007–2014 Canonical Ltd.
     Copyright © 2021, 2022 mirabilos and ⮡ tarent solutions GmbH
     Copyright © 2023, 2024 mirabilos and Qvest Digital AG
     Copyright © 2025 mirabilos <tg@debian.org>
 
 SipHash:
-    Copyright © Copyright (c) 2012-2014 Daniel J. Bernstein <djb@cr.yp.to>
-    Copyright © 2012-2021 Jean-Philippe Aumasson <jeanphilippe.aumasson@gmail.com>
+    Copyright © Copyright (c) 2012–2014 Daniel J. Bernstein <djb@cr.yp.to>
+    Copyright © 2012–2021 Jean-Philippe Aumasson <jeanphilippe.aumasson@gmail.com>
 
 ------------------------------------------------------------------------------
 License:

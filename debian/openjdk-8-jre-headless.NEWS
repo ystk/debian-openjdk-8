@@ -1,3 +1,105 @@
+openjdk-8 (8u452-ga-1) unstable; urgency=low
+
+  Upstream-provided “Notes on individual issues” as applicable:
+
+  security-libs/java.security:
+
+  JDK-8309841: Jarsigner should print a warning if an entry is removed
+  ====================================================================
+  In previous OpenJDK releases, the jarsigner tool did not detect the
+  case where a file was removed from a signed JAR file but its signature
+  was still present. With this release, `jarsigner -verify` checks that
+  every signature has a matching file entry and prints a warning if this
+  is not the case. The `-verbose` option can also be added to the
+  command to see the names of the mismatched entries.
+
+  security-libs/javax.net.ssl:
+
+  JDK-8346587: Distrust TLS server certs anchored by Camerfirma Root CAs
+  ======================================================================
+  In accordance with similar plans recently announced by Google,
+  Mozilla, Apple and Microsoft, the JDK will not trust Transport Layer
+  Security (TLS) certificates issued after the 15th of April 2025 which
+  are anchored by Camerfirma root certificates.
+
+  Certificates issued on or before April 15th, 2025 will continue to
+  be trusted until they expire.
+
+  If a server's certificate chain is anchored by an affected
+  certificate, attempts to negotiate a TLS session will fail with an
+  Exception that indicates the trust anchor is not trusted. For example,
+
+  "TLS server certificate issued after 2025-04-15 and anchored by a
+  distrusted legacy Camerfirma root CA: CN=Chambers of Commerce Root -
+  2008, O=AC Camerfirma S.A., SERIALNUMBER=A82743287, L=Madrid (see
+  current address at www.camerfirma.com/address), C=EU"
+
+  To check whether a certificate in a JDK keystore is affected by this
+  change, you can the `keytool` utility:
+
+  keytool -v -list -alias <your_server_alias> -keystore <filename>
+
+  If any of the certificates in the chain are affected by this change,
+  then you will need to update the certificate or contact the
+  organisation responsible for managing the certificate.
+
+  These restrictions apply to the following Camerfirma root certificates
+  included in the JDK:
+
+  Alias name: camerfirmachamberscommerceca [jdk]
+  CN=Chambers of Commerce Root
+  OU=http://www.chambersign.org
+  O=AC Camerfirma SA CIF A82743287
+  C=EU
+  SHA256: 0C:25:8A:12:A5:67:4A:EF:25:F2:8B:A7:DC:FA:EC:EE:\
+          A3:48:E5:41:E6:F5:CC:4E:E6:3B:71:B3:61:60:6A:C3
+
+  Alias name: camerfirmachambersca [jdk]
+  CN=Chambers of Commerce Root - 2008
+  O=AC Camerfirma S.A.
+  SERIALNUMBER=A82743287
+  L=Madrid (see current address at www.camerfirma.com/address)
+  C=EU
+  SHA256: 06:3E:4A:FA:C4:91:DF:D3:32:F3:08:9B:85:42:E9:46:\
+          17:D8:93:D7:FE:94:4E:10:A7:93:7E:E2:9D:96:93:C0
+
+  Alias name: camerfirmachambersignca [jdk]
+  CN=Global Chambersign Root - 2008
+  O=AC Camerfirma S.A.
+  SERIALNUMBER=A82743287
+  L=Madrid (see current address at www.camerfirma.com/address)
+  C=EU
+  SHA256: 13:63:35:43:93:34:A7:69:80:16:A0:D3:24:DE:72:28:\
+          4E:07:9D:7B:52:20:BB:8F:BD:74:78:16:EE:BE:BA:CA
+
+  Users can, *at their own risk*, remove this restriction by modifying
+  the `java.security` configuration file (or override it by using the
+  `java.security.properties` system property) so "CAMERFIRMA_TLS" is no
+  longer listed in the `jdk.security.caDistrustPolicies` security
+  property.
+
+  core-libs/java.time:
+
+  JDK-8339637: (tz) Update Timezone Data to 2024b
+  ===============================================
+  This OpenJDK release upgrades the in-tree copy of the IANA timezone
+  database to 2024b.  This timezone update is primarily concerned with
+  improving historical data for Mexico, Monogolia and Portugal. It also
+  makes Asia/Choibalsan an alias for Asia/Ulaanbaatar and makes the MET
+  timezone the same as CET.
+
+  The 2024b update also makes a number of legacy timezone IDs equal to
+  geographical names rather than fixed offsets, as follows:
+
+  * EST => America/Panama instead of -5:00
+  * MST => America/Phoenix instead of -7:00
+  * HST => Pacific/Honolulu instead of -10:00
+
+  For long term support releases of OpenJDK, this change is overridden
+  locally to retain the existing fixed offset mapping.
+
+ -- Thorsten Glaser <tg@mirbsd.de>  Sun, 11 May 2025 22:02:54 +0000
+
 openjdk-8 (8u442-ga-1) unstable; urgency=low
 
   Upstream-provided “Notes on individual issues” as applicable:

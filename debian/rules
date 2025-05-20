@@ -69,7 +69,7 @@ endif
 
 # we know about:
 # wheezy jessie stretch buster bullseye bookworm trixie sid
-# precise trusty xenial bionic focal jammy noble oracular plucky
+# precise trusty xenial bionic focal jammy noble oracular plucky questing
 
 ifneq (,$(filter $(distrel),wheezy precise trusty))
   is_default = no
@@ -101,10 +101,10 @@ shortver	= 8
 is_release		=
 is_release		= yes
 gh_project		= jdk8u
-gh_tag			= jdk8u442-ga
+gh_tag			= jdk8u452-ga
 version_dash_buildnr	= $(subst ${gh_project},,${gh_tag})
-version_dash_buildnr	= 442-b06
-gh_tag_aarch32		= jdk8u442-ga-aarch32-20250125
+version_dash_buildnr	= 452-b09
+gh_tag_aarch32		= jdk8u452-ga-aarch32-20250424
 package_version		= $(subst jdk,,${gh_tag})
 ifneq ($(is_release),yes)
   package_version	:= $(subst -,~,$(package_version))
@@ -604,7 +604,7 @@ endif
 # use javaws from icedtea-netx
 all_jre_tools	= $(filter-out javaws, $(notdir $(wildcard $(builddir)/$(jreimg)/bin/*)))
 jre_tools	= $(filter policytool, $(all_jre_tools))
-jre_hl_tools	:= $(filter-out $(jre_tools), $(all_jre_tools))
+jre_hl_tools	= $(filter-out $(jre_tools), $(all_jre_tools))
 
 corba_tools	= orbd servertool tnameserv
 jre_hl_tools_alt= $(filter-out $(corba_tools), $(jre_hl_tools)) $(corba_tools)
@@ -1755,6 +1755,12 @@ ifneq (,$(pkg_certs))
 endif
 
 	@echo JRE_HL_TOOLS: $(jre_hl_tools_alt) jexec
+	@for tool in $(jre_hl_tools_alt); do \
+		test x"$$tool" = x"java" || continue; \
+		exit 0; \
+	done; \
+	echo E: java not in JRE_HL_TOOLS, implausible; \
+	exit 1
 	@echo JRE_TOOLS: $(jre_tools_alt)
 	@echo JDK_HL_TOOLS: $(jdk_hl_tools_alt)
 	@echo JDK_TOOLS: $(jdk_tools_alt)
